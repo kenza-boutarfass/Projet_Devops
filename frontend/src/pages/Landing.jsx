@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Button from '../components/ui/Button.jsx'
 import LandingNav from '../components/navigation/LandingNav.jsx'
 import Pipeline from '../components/navigation/Pipeline.jsx'
+import AudienceSection from '../components/landing/AudienceSection.jsx'
 
 const principles = [
   {
@@ -89,6 +90,8 @@ function Landing() {
           <p className="workflow-disclaimer">Proposed product workflow · Capabilities are being built in phases</p>
         </div>
       </section>
+
+      <AudienceSection />
 
       <section className="principles-section" id="principles">
         <div className="landing-container">

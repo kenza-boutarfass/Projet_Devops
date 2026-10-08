@@ -5,6 +5,7 @@ import AuthLayout from '../components/layout/AuthLayout.jsx'
 import AuthField from '../components/ui/AuthField.jsx'
 
 function Register() {
+  const [profile, setProfile] = useState('student')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -30,6 +31,26 @@ function Register() {
   return (
     <AuthLayout heading="Create your workspace" intro="Start with a clearer view of data quality." mode="register">
       <form className="auth-form" onSubmit={handleSubmit}>
+        <fieldset className="profile-choice">
+          <legend>Choose your profile</legend>
+          <div className="profile-choice-options">
+            <label className={`profile-choice-option ${profile === 'student' ? 'profile-choice-selected' : ''}`}>
+              <input checked={profile === 'student'} name="profile" onChange={() => setProfile('student')} type="radio" value="student" />
+              <span className="profile-choice-copy"><strong>Student</strong><small>Learning and academic projects</small></span>
+              {profile === 'student' && <Check className="profile-choice-check" size={15} aria-hidden="true" />}
+            </label>
+            <label className={`profile-choice-option ${profile === 'professor' ? 'profile-choice-selected' : ''}`}>
+              <input checked={profile === 'professor'} name="profile" onChange={() => setProfile('professor')} type="radio" value="professor" />
+              <span className="profile-choice-copy"><strong>Professor</strong><small>Teaching, reviewing, monitoring</small></span>
+              {profile === 'professor' && <Check className="profile-choice-check" size={15} aria-hidden="true" />}
+            </label>
+            <label className={`profile-choice-option ${profile === 'professional' ? 'profile-choice-selected' : ''}`}>
+              <input checked={profile === 'professional'} name="profile" onChange={() => setProfile('professional')} type="radio" value="professional" />
+              <span className="profile-choice-copy"><strong>Professional</strong><small>Real-world quality workflows</small></span>
+              {profile === 'professional' && <Check className="profile-choice-check" size={15} aria-hidden="true" />}
+            </label>
+          </div>
+        </fieldset>
         <AuthField
           autoComplete="name"
           id="register-name"
@@ -80,7 +101,7 @@ function Register() {
         {message && <p aria-live="polite" className="form-feedback">{message}</p>}
         <button className="button button-primary auth-submit" disabled={loading} type="submit">
           {loading ? <span className="button-spinner" /> : null}
-          {loading ? 'Creating preview...' : 'Create account'}
+          {loading ? 'Validating...' : 'Register'}
         </button>
       </form>
       <p className="auth-switch">Already registered? <Link to="/login">Sign in</Link></p>

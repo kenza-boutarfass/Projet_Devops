@@ -20,7 +20,7 @@ function Login() {
   }
 
   return (
-    <AuthLayout heading="Welcome back" intro="Sign in to continue" mode="login">
+    <AuthLayout heading="Welcome back" intro="Sign in to access your data quality workspace." mode="login">
       <form className="auth-form" onSubmit={handleSubmit}>
         <AuthField
           autoComplete="email"
