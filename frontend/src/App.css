@@ -1,0 +1,75 @@
+.platform-shell {
+  width: min(100% - 48px, 760px);
+  margin: 0 auto;
+  padding: 15vh 0 48px;
+}
+
+.platform-header {
+  padding-bottom: 36px;
+  border-bottom: 1px solid var(--line);
+}
+
+.eyebrow {
+  margin: 0 0 20px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+h1 {
+  max-width: 600px;
+  margin: 0;
+  color: var(--ink);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(38px, 8vw, 64px);
+  font-weight: 400;
+  line-height: 1.05;
+}
+
+.tagline {
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 17px;
+}
+
+.connection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 0;
+}
+
+.connection p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.connection strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.status-healthy {
+  background: var(--success);
+}
+
+.status-unavailable {
+  background: var(--error);
+}
+
+@media (max-width: 600px) {
+  .platform-shell {
+    width: min(100% - 40px, 760px);
+    padding-top: 18vh;
+  }
+}
