@@ -7,6 +7,7 @@ const datasetRoutes = require('./routes/datasets');
 const ruleRoutes = require('./routes/rules');
 const contractRoutes = require('./routes/contracts');
 const validationRoutes = require('./routes/validations');
+const reportRoutes = require('./routes/reports');
 const { authenticate, requireRoles } = require('./middleware/auth');
 
 const app = express();
@@ -14,13 +15,14 @@ const app = express();
 app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json());
 
-// Routes d'authentification, projets, datasets, règles de qualité, contrats et validation
+// Routes d'authentification, projets, datasets, règles de qualité, contrats, validation et rapports
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/projects', datasetRoutes);
 app.use('/api/projects', ruleRoutes);
 app.use('/api/projects', contractRoutes);
 app.use('/api/projects', validationRoutes);
+app.use('/api/projects', reportRoutes);
 
 // Health check
 app.get('/api/health', async (req, res) => {

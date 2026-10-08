@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowUpRight,
+  Award,
   Boxes,
   Check,
   CheckCheck,
@@ -17,6 +18,7 @@ import {
   FileCheck2,
   FileCode,
   FileSpreadsheet,
+  FileText,
   Filter,
   Gauge,
   Percent,
@@ -24,10 +26,12 @@ import {
   Plus,
   RefreshCw,
   ScanSearch,
+  Send,
   ShieldAlert,
   ShieldCheck,
   Sparkles,
   Table,
+  Terminal,
   Upload,
   UserCheck,
   X,
@@ -45,10 +49,12 @@ import {
   getDatasets,
   getLatestValidation,
   getProject,
+  getQualityReport,
   getRules,
   getStoredAuth,
   getValidationRuns,
   runValidation,
+  submitProfessorFeedback,
   updateRuleStatus,
   uploadDataset,
 } from '../services/api.js'
@@ -60,7 +66,7 @@ const tabs = [
   { label: 'Rules', icon: FileCheck2 },
   { label: 'Contract', icon: FileCode },
   { label: 'Validation', icon: ShieldCheck },
-  { label: 'Reports', icon: ArrowUpRight },
+  { label: 'Reports', icon: FileText },
 ]
 
 function ProjectDetails() {
@@ -101,6 +107,15 @@ function ProjectDetails() {
   const [valMsg, setValMsg] = useState('')
   const [valFilter, setValFilter] = useState('ALL') // 'ALL' | 'FAILED' | 'PASSED'
   const [expandedAssertionId, setExpandedAssertionId] = useState(null)
+
+  // Reports state
+  const [reportData, setReportData] = useState(null)
+  const [reportLoading, setReportLoading] = useState(false)
+  const [reportMsg, setReportMsg] = useState('')
+  const [professorFeedbackText, setProfessorFeedbackText] = useState('')
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
+  const [reportViewMode, setReportViewMode] = useState('executive') // 'executive' | 'cicd' | 'markdown'
+  const [reportCopied, setReportCopied] = useState(false)
 
   const auth = getStoredAuth()
 
@@ -166,6 +181,22 @@ function ProjectDetails() {
     }
   }
 
+  async function loadQualityReport() {
+    if (!projectData) return
+    setReportLoading(true)
+    try {
+      const data = await getQualityReport(projectData.id)
+      setReportData(data.report || null)
+      if (data.report?.supervision?.professorFeedback) {
+        setProfessorFeedbackText(data.report.supervision.professorFeedback)
+      }
+    } catch (err) {
+      console.error('Failed to load quality report:', err)
+    } finally {
+      setReportLoading(false)
+    }
+  }
+
   useEffect(() => {
     loadProjectAndDatasets()
   }, [id])
@@ -175,8 +206,54 @@ function ProjectDetails() {
       loadRules(ruleFilter)
       loadContract()
       loadValidationData()
+      loadQualityReport()
     }
   }, [projectData?.id, ruleFilter])
+
+  function handleDownloadReportMd() {
+    if (!reportData?.markdownReport) return
+    const blob = new Blob([reportData.markdownReport], { type: 'text/markdown;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${projectData.slug || 'project'}-quality-report.md`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function handleDownloadReportJson() {
+    if (!reportData) return
+    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${projectData.slug || 'project'}-quality-gate.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function handleCopyGitHubActions() {
+    if (!reportData?.githubActionsSnippet) return
+    navigator.clipboard.writeText(reportData.githubActionsSnippet)
+    setReportCopied(true)
+    setTimeout(() => setReportCopied(false), 2500)
+  }
+
+  async function handleSubmitProfessorFeedback(e) {
+    e.preventDefault()
+    if (!projectData || !professorFeedbackText.trim()) return
+    setFeedbackSubmitting(true)
+    setReportMsg('')
+    try {
+      await submitProfessorFeedback(projectData.id, professorFeedbackText)
+      setReportMsg('Supervision review successfully saved!')
+      await loadQualityReport()
+    } catch (err) {
+      setReportMsg(err.message || 'Failed to submit feedback')
+    } finally {
+      setFeedbackSubmitting(false)
+    }
+  }
 
   async function handleRunValidation() {
     if (!projectData) return
@@ -1707,13 +1784,515 @@ function ProjectDetails() {
           </div>
         )}
 
+        {/* ONGLER RAPPORTS DE QUALITÉ & DEVSECOPS (QUALITY REPORTS & CI/CD GATE) */}
+        {activeTab === 'Reports' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '14px',
+                background: 'rgba(30, 41, 59, 0.4)',
+                border: '1px solid rgba(148, 163, 184, 0.1)',
+                padding: '16px 20px',
+                borderRadius: '8px',
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Award size={20} style={{ color: '#38bdf8' }} />
+                  Executive Quality Report & DevSecOps CI/CD Gate
+                </h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
+                  Consolidated compliance audit, automated CI/CD pipeline gating, and academic supervision feedback.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  className="button"
+                  onClick={loadQualityReport}
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '0.82rem',
+                    background: '#1e293b',
+                    color: '#e2e8f0',
+                    border: '1px solid rgba(148, 163, 184, 0.2)',
+                  }}
+                  title="Refresh report"
+                  type="button"
+                >
+                  <RefreshCw className={reportLoading ? 'spin' : ''} size={14} />
+                  Refresh
+                </button>
+
+                {reportData && (
+                  <>
+                    <button
+                      className="button"
+                      onClick={handleDownloadReportMd}
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '0.82rem',
+                        background: '#1e293b',
+                        color: '#e2e8f0',
+                        border: '1px solid rgba(148, 163, 184, 0.2)',
+                      }}
+                      type="button"
+                    >
+                      <Download size={14} /> Export .md
+                    </button>
+
+                    <button
+                      className="button"
+                      onClick={handleDownloadReportJson}
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '0.82rem',
+                        background: '#1e293b',
+                        color: '#e2e8f0',
+                        border: '1px solid rgba(148, 163, 184, 0.2)',
+                      }}
+                      type="button"
+                    >
+                      <Download size={14} /> Export .json (CI/CD)
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {reportMsg && (
+              <div
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '6px',
+                  background: reportMsg.toLowerCase().includes('success') ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                  border: `1px solid ${reportMsg.toLowerCase().includes('success') ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                  color: reportMsg.toLowerCase().includes('success') ? '#6ee7b7' : '#fca5a5',
+                  fontSize: '0.88rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                {reportMsg.toLowerCase().includes('success') ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+                <span>{reportMsg}</span>
+              </div>
+            )}
+
+            {!reportData && !reportLoading && (
+              <div
+                className="panel"
+                style={{
+                  textAlign: 'center',
+                  padding: '50px 20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '14px',
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  border: '1px dashed rgba(148, 163, 184, 0.25)',
+                  borderRadius: '10px',
+                }}
+              >
+                <FileText size={28} style={{ color: '#38bdf8' }} />
+                <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#f8fafc' }}>
+                  No Quality Report available
+                </h3>
+                <p style={{ margin: 0, maxWidth: '500px', color: '#94a3b8', fontSize: '0.92rem' }}>
+                  To synthesize a complete executive report, run contract validation in the "Validation" tab first.
+                </p>
+                <button
+                  className="button"
+                  onClick={() => setActiveTab('Validation')}
+                  style={{ marginTop: '8px', padding: '8px 18px', background: '#0284c7', color: '#ffffff', border: 'none' }}
+                  type="button"
+                >
+                  Go to Validation Tab
+                </button>
+              </div>
+            )}
+
+            {reportData && (
+              <>
+                {/* Bannière d'état du CI/CD Quality Gate */}
+                <div
+                  style={{
+                    padding: '20px 24px',
+                    borderRadius: '8px',
+                    background: reportData.gate.passed
+                      ? 'linear-gradient(135deg, rgba(5, 150, 105, 0.2) 0%, rgba(16, 185, 129, 0.08) 100%)'
+                      : 'linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(239, 68, 68, 0.08) 100%)',
+                    border: `1px solid ${reportData.gate.passed ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '16px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div
+                      style={{
+                        width: '46px',
+                        height: '46px',
+                        borderRadius: '50%',
+                        background: reportData.gate.passed ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: reportData.gate.passed ? '#34d399' : '#f87171',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {reportData.gate.passed ? <CheckCircle2 size={24} /> : <AlertTriangle size={24} />}
+                    </div>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '1.1rem', color: reportData.gate.passed ? '#34d399' : '#f87171' }}>
+                        {reportData.gate.passed
+                          ? 'CI/CD QUALITY GATE: PASSED (EXIT CODE 0)'
+                          : 'CI/CD QUALITY GATE: FAILED (PIPELINE BLOCKED)'}
+                      </h4>
+                      <p style={{ margin: '4px 0 0', fontSize: '0.88rem', color: '#cbd5e1' }}>
+                        {reportData.gate.passed
+                          ? `Quality Score of ${reportData.gate.score}% satisfies the minimum SLO threshold (${reportData.gate.sloMinimum}%). Clear for deployment.`
+                          : `Quality Score of ${reportData.gate.score}% is below required threshold (${reportData.gate.sloMinimum}%). Policy "${reportData.gate.policy}" active.`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <span
+                    style={{
+                      background: reportData.gate.passed ? '#059669' : '#dc2626',
+                      color: '#ffffff',
+                      padding: '6px 14px',
+                      borderRadius: '20px',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      letterSpacing: '0.05em',
+                    }}
+                  >
+                    {reportData.gate.passed ? 'PRODUCTION READY' : 'BLOCKED'}
+                  </span>
+                </div>
+
+                {/* Métriques clés du rapport */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+                  <div className="panel" style={{ padding: '16px', background: 'rgba(15, 23, 42, 0.6)' }}>
+                    <span style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Overall Quality Score</span>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '6px' }}>
+                      <span style={{ fontSize: '1.8rem', fontWeight: 800, color: reportData.gate.passed ? '#34d399' : '#f87171' }}>
+                        {reportData.gate.score}%
+                      </span>
+                      <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                        Min {reportData.gate.sloMinimum}%
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="panel" style={{ padding: '16px', background: 'rgba(15, 23, 42, 0.6)' }}>
+                    <span style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Gate Policy</span>
+                    <div style={{ marginTop: '6px' }}>
+                      <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f59e0b' }}>
+                        {reportData.gate.policy}
+                      </span>
+                      <span style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block' }}>
+                        Exit Code: {reportData.gate.exitCode}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="panel" style={{ padding: '16px', background: 'rgba(15, 23, 42, 0.6)' }}>
+                    <span style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assertions Status</span>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '6px' }}>
+                      <span style={{ fontSize: '1.3rem', fontWeight: 700, color: '#38bdf8' }}>
+                        {reportData.validation?.passedAssertions || 0} passed
+                      </span>
+                      <span style={{ fontSize: '0.8rem', color: reportData.validation?.failedAssertions > 0 ? '#f87171' : '#94a3b8' }}>
+                        / {reportData.validation?.failedAssertions || 0} failed
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="panel" style={{ padding: '16px', background: 'rgba(15, 23, 42, 0.6)' }}>
+                    <span style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Dataset Records</span>
+                    <div style={{ marginTop: '6px' }}>
+                      <span style={{ fontSize: '1rem', fontWeight: 600, color: '#f8fafc', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {reportData.dataset?.name || 'Dataset'}
+                      </span>
+                      <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                        {reportData.dataset?.rows || 0} rows evaluated
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sélecteur de mode d'affichage du rapport */}
+                <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid rgba(148, 163, 184, 0.15)', paddingBottom: '10px' }}>
+                  <button
+                    className="button"
+                    onClick={() => setReportViewMode('executive')}
+                    style={{
+                      padding: '6px 14px',
+                      fontSize: '0.82rem',
+                      background: reportViewMode === 'executive' ? '#0284c7' : 'transparent',
+                      color: reportViewMode === 'executive' ? '#ffffff' : '#94a3b8',
+                      border: reportViewMode === 'executive' ? 'none' : '1px solid rgba(148, 163, 184, 0.2)',
+                    }}
+                    type="button"
+                  >
+                    Executive Summary
+                  </button>
+                  <button
+                    className="button"
+                    onClick={() => setReportViewMode('cicd')}
+                    style={{
+                      padding: '6px 14px',
+                      fontSize: '0.82rem',
+                      background: reportViewMode === 'cicd' ? '#0284c7' : 'transparent',
+                      color: reportViewMode === 'cicd' ? '#ffffff' : '#94a3b8',
+                      border: reportViewMode === 'cicd' ? 'none' : '1px solid rgba(148, 163, 184, 0.2)',
+                    }}
+                    type="button"
+                  >
+                    CI/CD Pipeline Integration (GitHub Actions)
+                  </button>
+                  <button
+                    className="button"
+                    onClick={() => setReportViewMode('markdown')}
+                    style={{
+                      padding: '6px 14px',
+                      fontSize: '0.82rem',
+                      background: reportViewMode === 'markdown' ? '#0284c7' : 'transparent',
+                      color: reportViewMode === 'markdown' ? '#ffffff' : '#94a3b8',
+                      border: reportViewMode === 'markdown' ? 'none' : '1px solid rgba(148, 163, 184, 0.2)',
+                    }}
+                    type="button"
+                  >
+                    Markdown Audit Document
+                  </button>
+                </div>
+
+                {/* Vue 1 : Executive Summary & Supervision Review */}
+                {reportViewMode === 'executive' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+                      <div className="panel" style={{ padding: '18px', background: 'rgba(15, 23, 42, 0.6)' }}>
+                        <h4 style={{ margin: '0 0 12px', fontSize: '0.95rem', color: '#f8fafc' }}>
+                          Pipeline Traceability & Metadata
+                        </h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.85rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(148, 163, 184, 0.08)', paddingBottom: '6px' }}>
+                            <span style={{ color: '#94a3b8' }}>Project Owner:</span>
+                            <span style={{ color: '#f8fafc', fontWeight: 600 }}>{reportData.project.ownerName}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(148, 163, 184, 0.08)', paddingBottom: '6px' }}>
+                            <span style={{ color: '#94a3b8' }}>Environment:</span>
+                            <span style={{ color: '#38bdf8' }}>{reportData.project.environment}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(148, 163, 184, 0.08)', paddingBottom: '6px' }}>
+                            <span style={{ color: '#94a3b8' }}>Contract Specification:</span>
+                            <span style={{ color: '#f8fafc' }}>Open Data Contract (ODCS 0.9.3)</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(148, 163, 184, 0.08)', paddingBottom: '6px' }}>
+                            <span style={{ color: '#94a3b8' }}>Verification Runtime:</span>
+                            <span style={{ color: '#34d399' }}>{reportData.validation?.executionTimeMs || 0} ms</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#94a3b8' }}>Report Timestamp:</span>
+                            <span style={{ color: '#cbd5e1' }}>{new Date(reportData.generatedAt).toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Avis et évaluation de supervision professeur */}
+                      <div className="panel" style={{ padding: '18px', background: 'rgba(15, 23, 42, 0.6)' }}>
+                        <h4 style={{ margin: '0 0 12px', fontSize: '0.95rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Award size={16} style={{ color: '#38bdf8' }} />
+                          Academic Supervision & Professor Review
+                        </h4>
+
+                        {reportData.supervision?.professorFeedback ? (
+                          <div
+                            style={{
+                              background: '#1e293b50',
+                              border: '1px solid rgba(56, 189, 248, 0.3)',
+                              borderRadius: '6px',
+                              padding: '12px 14px',
+                            }}
+                          >
+                            <span style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
+                              Evaluated by {reportData.supervision.reviewerName || 'Professor'} ({new Date(reportData.supervision.reviewedAt).toLocaleDateString()}):
+                            </span>
+                            <p style={{ margin: 0, fontSize: '0.9rem', color: '#e2e8f0', fontStyle: 'italic', lineHeight: 1.5 }}>
+                              "{reportData.supervision.professorFeedback}"
+                            </p>
+                          </div>
+                        ) : (
+                          <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>
+                            No supervision review has been recorded yet for this project.
+                          </p>
+                        )}
+
+                        {/* Formulaire réservé au professeur en mode supervision */}
+                        {auth?.user?.role === 'PROFESSOR' && (
+                          <form onSubmit={handleSubmitProfessorFeedback} style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>
+                              Add / Update Supervision Evaluation Note:
+                            </label>
+                            <textarea
+                              className="textarea"
+                              onChange={(e) => setProfessorFeedbackText(e.target.value)}
+                              placeholder="Enter academic review remarks, compliance assessment or grading comments..."
+                              rows={3}
+                              style={{ width: '100%', fontSize: '0.85rem', padding: '8px', borderRadius: '6px' }}
+                              value={professorFeedbackText}
+                            />
+                            <button
+                              className="button"
+                              disabled={feedbackSubmitting || !professorFeedbackText.trim()}
+                              style={{
+                                alignSelf: 'flex-end',
+                                padding: '6px 14px',
+                                fontSize: '0.8rem',
+                                background: '#0284c7',
+                                color: '#ffffff',
+                                border: 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                              }}
+                              type="submit"
+                            >
+                              <Send size={13} />
+                              {feedbackSubmitting ? 'Saving...' : 'Submit Evaluation'}
+                            </button>
+                          </form>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Vue 2 : CI/CD Pipeline Integration (GitHub Actions) */}
+                {reportViewMode === 'cicd' && (
+                  <div
+                    style={{
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      border: '1px solid rgba(148, 163, 184, 0.2)',
+                      background: '#090d16',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '10px 16px',
+                        background: '#131b2e',
+                        borderBottom: '1px solid rgba(148, 163, 184, 0.15)',
+                        fontSize: '0.82rem',
+                      }}
+                    >
+                      <span style={{ fontFamily: 'monospace', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Terminal size={14} /> .github/workflows/data-quality-gate.yml
+                      </span>
+                      <button
+                        className="button"
+                        onClick={handleCopyGitHubActions}
+                        style={{
+                          padding: '4px 10px',
+                          fontSize: '0.78rem',
+                          background: reportCopied ? '#059669' : '#1e293b',
+                          color: reportCopied ? '#ffffff' : '#cbd5e1',
+                          border: '1px solid rgba(148, 163, 184, 0.2)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                        type="button"
+                      >
+                        {reportCopied ? <CheckCheck size={13} /> : <Copy size={13} />}
+                        {reportCopied ? 'Copied!' : 'Copy Workflow Snippet'}
+                      </button>
+                    </div>
+                    <pre
+                      style={{
+                        margin: 0,
+                        padding: '18px 20px',
+                        overflowX: 'auto',
+                        fontSize: '0.85rem',
+                        fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                        lineHeight: 1.6,
+                        color: '#e2e8f0',
+                        maxHeight: '440px',
+                      }}
+                    >
+                      {reportData.githubActionsSnippet}
+                    </pre>
+                  </div>
+                )}
+
+                {/* Vue 3 : Markdown Audit Document */}
+                {reportViewMode === 'markdown' && (
+                  <div
+                    style={{
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      border: '1px solid rgba(148, 163, 184, 0.2)',
+                      background: '#090d16',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '10px 16px',
+                        background: '#131b2e',
+                        borderBottom: '1px solid rgba(148, 163, 184, 0.15)',
+                        fontSize: '0.82rem',
+                        color: '#94a3b8',
+                      }}
+                    >
+                      <span style={{ fontFamily: 'monospace', color: '#38bdf8' }}>
+                        {projectData.slug}-quality-report.md
+                      </span>
+                      <span>Format: GitHub Flavored Markdown (GFM)</span>
+                    </div>
+                    <pre
+                      style={{
+                        margin: 0,
+                        padding: '18px 20px',
+                        overflowX: 'auto',
+                        fontSize: '0.85rem',
+                        fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                        lineHeight: 1.6,
+                        color: '#e2e8f0',
+                        maxHeight: '480px',
+                        whiteSpace: 'pre-wrap',
+                      }}
+                    >
+                      {reportData.markdownReport}
+                    </pre>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
         {/* AUTRES ONGLETS EN COURS DE DÉVELOPPEMENT */}
-        {!['Overview', 'Datasets', 'Profile', 'Rules', 'Contract', 'Validation'].includes(activeTab) && (
+        {!['Overview', 'Datasets', 'Profile', 'Rules', 'Contract', 'Validation', 'Reports'].includes(activeTab) && (
           <div className="coming-soon-panel">
             <span className="coming-soon-icon"><Boxes size={20} aria-hidden="true" /></span>
             <p className="panel-eyebrow">{activeTab.toUpperCase()}</p>
             <h2>Coming in the next development phase</h2>
-            <p>This workspace is prepared for {activeTab.toLowerCase()} capabilities. Next step is Quality Reports & DevSecOps Audit generation.</p>
+            <p>This workspace is prepared for {activeTab.toLowerCase()} capabilities.</p>
           </div>
         )}
       </section>

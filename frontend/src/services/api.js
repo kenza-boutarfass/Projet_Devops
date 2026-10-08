@@ -486,3 +486,46 @@ export async function runValidation(projectId, { contractId, datasetId } = {}) {
 
   return data
 }
+
+export async function getQualityReport(projectId) {
+  const auth = getStoredAuth()
+  const headers = { Accept: 'application/json' }
+  if (auth?.token) {
+    headers.Authorization = `Bearer ${auth.token}`
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects/${projectId}/report`, {
+    headers,
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to fetch quality report')
+  }
+
+  return data
+}
+
+export async function submitProfessorFeedback(projectId, feedback) {
+  const auth = getStoredAuth()
+  if (!auth?.token) {
+    throw new Error('Authentication required')
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects/${projectId}/report/feedback`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ feedback }),
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to submit review')
+  }
+
+  return data
+}

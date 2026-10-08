@@ -115,3 +115,23 @@ CREATE TABLE IF NOT EXISTS validation_runs (
 
 CREATE INDEX IF NOT EXISTS idx_validation_runs_project_id ON validation_runs(project_id);
 CREATE INDEX IF NOT EXISTS idx_validation_runs_created_at ON validation_runs(created_at DESC);
+
+-- Table des rapports de qualité et évaluations DevSecOps (Quality Reports & Reviews)
+CREATE TABLE IF NOT EXISTS quality_reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  validation_run_id UUID REFERENCES validation_runs(id) ON DELETE SET NULL,
+  contract_id UUID REFERENCES data_contracts(id) ON DELETE SET NULL,
+  gate_status VARCHAR(50) NOT NULL DEFAULT 'PASSED',
+  quality_score NUMERIC(5,2) NOT NULL DEFAULT 100.00,
+  slo_minimum NUMERIC(5,2) NOT NULL DEFAULT 90.00,
+  slo_met BOOLEAN NOT NULL DEFAULT TRUE,
+  summary_metrics JSONB NOT NULL DEFAULT '{}'::jsonb,
+  markdown_report TEXT NOT NULL DEFAULT '',
+  professor_feedback TEXT,
+  reviewed_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  reviewed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_quality_reports_project_id ON quality_reports(project_id);
