@@ -1,54 +1,30 @@
-import { useEffect, useState } from 'react'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import AppShell from './components/layout/AppShell.jsx'
+import Dashboard from './pages/Dashboard.jsx'
+import CreateProject from './pages/CreateProject.jsx'
+import Landing from './pages/Landing.jsx'
+import Login from './pages/Login.jsx'
+import ProjectDetails from './pages/ProjectDetails.jsx'
+import Projects from './pages/Projects.jsx'
+import Register from './pages/Register.jsx'
+import Settings from './pages/Settings.jsx'
 import './App.css'
 
 function App() {
-  const [backendStatus, setBackendStatus] = useState('checking')
-
-  useEffect(() => {
-    const controller = new AbortController()
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
-
-    async function checkBackend() {
-      try {
-        const response = await fetch(`${apiUrl}/health`, {
-          signal: controller.signal,
-        })
-        const health = await response.json()
-        setBackendStatus(
-          response.ok && health.status === 'healthy' ? 'healthy' : 'unavailable',
-        )
-      } catch (error) {
-        if (error.name !== 'AbortError') {
-          setBackendStatus('unavailable')
-        }
-      }
-    }
-
-    checkBackend()
-    return () => controller.abort()
-  }, [])
-
   return (
-    <main className="platform-shell">
-      <header className="platform-header">
-        <p className="eyebrow">DATA QUALITY PLATFORM</p>
-        <h1>Data Quality Platform</h1>
-        <p className="tagline">From Messy Data to Executable Quality.</p>
-      </header>
-
-      <section className="connection" aria-live="polite">
-        <span
-          className={`status-indicator status-${backendStatus}`}
-          aria-hidden="true"
-        />
-        <p>
-          Backend status:{' '}
-          <strong>
-            {backendStatus === 'checking' ? 'checking' : backendStatus}
-          </strong>
-        </p>
-      </section>
-    </main>
+    <Routes>
+      <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route element={<AppShell />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/projects" element={<Projects />} />
+        <Route path="/projects/new" element={<CreateProject />} />
+        <Route path="/projects/:id" element={<ProjectDetails />} />
+        <Route path="/settings" element={<Settings />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
 

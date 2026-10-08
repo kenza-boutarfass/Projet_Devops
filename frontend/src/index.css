@@ -1,18 +1,27 @@
+@import 'tailwindcss';
+
 :root {
-  font-family: 'Segoe UI', sans-serif;
-  color: #27322e;
-  background: #f5f7f3;
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  color: #242522;
+  background: #f5f4f0;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  --ink: #27322e;
-  --muted: #64716b;
-  --line: #d9e0da;
-  --accent: #276c55;
-  --success: #258052;
-  --error: #b44f45;
+  --ink: #242522;
+  --ink-soft: #343632;
+  --muted: #77776f;
+  --line: #e4e1d9;
+  --paper: #f5f4f0;
+  --surface: #fffefa;
+  --charcoal: #20211f;
+  --gold: #b89a62;
+  --gold-soft: #e8ddc7;
+  --green: #607c69;
+  --green-soft: #e5ece6;
+  --red: #a9584e;
+  --red-soft: #f3e7e3;
 }
 
 * {
@@ -23,8 +32,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background-image: linear-gradient(#e8ede8 1px, transparent 1px);
-  background-size: 100% 44px;
+  background: var(--paper);
 }
 
 #root {
@@ -32,6 +40,27 @@ body {
 }
 
 button,
-input {
+input,
+textarea,
+select {
   font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+::selection {
+  color: var(--charcoal);
+  background: var(--gold-soft);
 }
