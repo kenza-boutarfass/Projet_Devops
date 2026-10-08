@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
 import {
+  Activity,
   AlertTriangle,
   ArrowLeft,
   ArrowUpRight,
@@ -7,6 +7,9 @@ import {
   Check,
   CheckCheck,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Clock,
   Code2,
   Copy,
   Database,
@@ -17,6 +20,7 @@ import {
   Filter,
   Gauge,
   Percent,
+  Play,
   Plus,
   RefreshCw,
   ScanSearch,
@@ -39,9 +43,12 @@ import {
   generateContract,
   getContract,
   getDatasets,
+  getLatestValidation,
   getProject,
   getRules,
   getStoredAuth,
+  getValidationRuns,
+  runValidation,
   updateRuleStatus,
   uploadDataset,
 } from '../services/api.js'
@@ -85,6 +92,15 @@ function ProjectDetails() {
   const [contractMsg, setContractMsg] = useState('')
   const [contractViewMode, setContractViewMode] = useState('yaml') // 'yaml' | 'assertions'
   const [copied, setCopied] = useState(false)
+
+  // Validation state
+  const [latestRun, setLatestRun] = useState(null)
+  const [validationRuns, setValidationRuns] = useState([])
+  const [valLoading, setValLoading] = useState(false)
+  const [valExecuting, setValExecuting] = useState(false)
+  const [valMsg, setValMsg] = useState('')
+  const [valFilter, setValFilter] = useState('ALL') // 'ALL' | 'FAILED' | 'PASSED'
+  const [expandedAssertionId, setExpandedAssertionId] = useState(null)
 
   const auth = getStoredAuth()
 
@@ -133,6 +149,23 @@ function ProjectDetails() {
     }
   }
 
+  async function loadValidationData() {
+    if (!projectData) return
+    setValLoading(true)
+    try {
+      const [latestRes, runsRes] = await Promise.all([
+        getLatestValidation(projectData.id),
+        getValidationRuns(projectData.id),
+      ])
+      setLatestRun(latestRes.run || null)
+      setValidationRuns(runsRes.runs || [])
+    } catch (err) {
+      console.error('Failed to load validation data:', err)
+    } finally {
+      setValLoading(false)
+    }
+  }
+
   useEffect(() => {
     loadProjectAndDatasets()
   }, [id])
@@ -141,8 +174,29 @@ function ProjectDetails() {
     if (projectData?.id) {
       loadRules(ruleFilter)
       loadContract()
+      loadValidationData()
     }
   }, [projectData?.id, ruleFilter])
+
+  async function handleRunValidation() {
+    if (!projectData) return
+    setValExecuting(true)
+    setValMsg('')
+    try {
+      const res = await runValidation(projectData.id, {
+        contractId: contract?.id,
+        datasetId: selectedDataset?.id,
+      })
+      setLatestRun(res.run)
+      setValMsg(res.message || 'Validation executed successfully!')
+      await loadValidationData()
+      await loadProjectAndDatasets()
+    } catch (err) {
+      setValMsg(err.message || 'Validation failed')
+    } finally {
+      setValExecuting(false)
+    }
+  }
 
   async function handleGenerateContract() {
     if (!projectData) return
@@ -1163,13 +1217,503 @@ function ProjectDetails() {
           </div>
         )}
 
+        {/* ONGLER VALIDATION DÉTERMINISTE (VALIDATION ENGINE) */}
+        {activeTab === 'Validation' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '14px',
+                background: 'rgba(30, 41, 59, 0.4)',
+                border: '1px solid rgba(148, 163, 184, 0.1)',
+                padding: '16px 20px',
+                borderRadius: '8px',
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldCheck size={20} style={{ color: '#10b981' }} />
+                  Deterministic Contract Validation Engine (CI/CD Quality Gate)
+                </h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
+                  Executes automated verification against ODCS quality assertions to enforce production data reliability.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  className="button"
+                  onClick={loadValidationData}
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '0.82rem',
+                    background: '#1e293b',
+                    color: '#e2e8f0',
+                    border: '1px solid rgba(148, 163, 184, 0.2)',
+                  }}
+                  title="Refresh validation history"
+                  type="button"
+                >
+                  <RefreshCw className={valLoading ? 'spin' : ''} size={14} />
+                  Refresh
+                </button>
+
+                {!isSupervision && (
+                  <button
+                    className="button"
+                    disabled={valExecuting || !contract}
+                    onClick={handleRunValidation}
+                    style={{
+                      padding: '6px 16px',
+                      fontSize: '0.82rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      fontWeight: 600,
+                    }}
+                    type="button"
+                  >
+                    {valExecuting ? <RefreshCw className="spin" size={14} /> : <Play size={14} />}
+                    {valExecuting ? 'Executing Validation...' : 'Run Contract Validation'}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {valMsg && (
+              <div
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '6px',
+                  background: valMsg.toLowerCase().includes('success') || valMsg.toLowerCase().includes('completed') ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                  border: `1px solid ${valMsg.toLowerCase().includes('success') || valMsg.toLowerCase().includes('completed') ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                  color: valMsg.toLowerCase().includes('success') || valMsg.toLowerCase().includes('completed') ? '#6ee7b7' : '#fca5a5',
+                  fontSize: '0.88rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                {valMsg.toLowerCase().includes('fail') ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
+                <span>{valMsg}</span>
+              </div>
+            )}
+
+            {!contract && (
+              <div
+                className="panel"
+                style={{
+                  textAlign: 'center',
+                  padding: '40px 20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '12px',
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  border: '1px dashed rgba(245, 158, 11, 0.3)',
+                  borderRadius: '10px',
+                }}
+              >
+                <AlertTriangle size={28} style={{ color: '#f59e0b' }} />
+                <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#f8fafc' }}>
+                  No Active Data Contract Found
+                </h3>
+                <p style={{ margin: 0, maxWidth: '480px', color: '#94a3b8', fontSize: '0.9rem' }}>
+                  Validation requires an active Data Contract. Please compile your quality rules into an ODCS contract in the "Contract" tab first.
+                </p>
+                <button
+                  className="button"
+                  onClick={() => setActiveTab('Contract')}
+                  style={{ marginTop: '8px', padding: '8px 16px', background: '#0284c7', color: '#ffffff', border: 'none' }}
+                  type="button"
+                >
+                  Go to Contract Tab
+                </button>
+              </div>
+            )}
+
+            {contract && !latestRun && !valLoading && (
+              <div
+                className="panel"
+                style={{
+                  textAlign: 'center',
+                  padding: '50px 20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '14px',
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  border: '1px dashed rgba(148, 163, 184, 0.25)',
+                  borderRadius: '10px',
+                }}
+              >
+                <div
+                  style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '50%',
+                    background: 'rgba(16, 185, 129, 0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#10b981',
+                  }}
+                >
+                  <Activity size={28} />
+                </div>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#f8fafc' }}>
+                  No validation runs recorded yet
+                </h3>
+                <p style={{ margin: 0, maxWidth: '500px', color: '#94a3b8', fontSize: '0.92rem', lineHeight: 1.5 }}>
+                  The Data Contract <strong>{contract.version}</strong> is ready with {contract.contract_spec?.qualityRules?.length || 0} assertions.
+                  Trigger validation to scan the dataset and enforce CI/CD quality thresholds.
+                </p>
+
+                {!isSupervision && (
+                  <button
+                    className="button"
+                    disabled={valExecuting}
+                    onClick={handleRunValidation}
+                    style={{
+                      marginTop: '8px',
+                      padding: '10px 22px',
+                      background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                    type="button"
+                  >
+                    <Play size={16} /> Run Contract Validation
+                  </button>
+                )}
+              </div>
+            )}
+
+            {latestRun && (
+              <>
+                {/* Cartes KPI du dernier run de validation */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px' }}>
+                  <div className="panel" style={{ padding: '16px', background: 'rgba(15, 23, 42, 0.6)' }}>
+                    <span style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quality Score</span>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '6px' }}>
+                      <span style={{ fontSize: '1.8rem', fontWeight: 800, color: latestRun.quality_score >= 90 ? '#34d399' : '#f87171' }}>
+                        {latestRun.quality_score}%
+                      </span>
+                      <span
+                        style={{
+                          background: latestRun.status === 'PASSED' ? '#05966920' : '#dc262620',
+                          color: latestRun.status === 'PASSED' ? '#34d399' : '#f87171',
+                          border: `1px solid ${latestRun.status === 'PASSED' ? '#10b98140' : '#ef444440'}`,
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                        }}
+                      >
+                        {latestRun.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="panel" style={{ padding: '16px', background: 'rgba(15, 23, 42, 0.6)' }}>
+                    <span style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>SLO Gate Status</span>
+                    <div style={{ marginTop: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {latestRun.slo_met ? <CheckCircle2 size={16} style={{ color: '#34d399' }} /> : <AlertTriangle size={16} style={{ color: '#f87171' }} />}
+                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: latestRun.slo_met ? '#34d399' : '#f87171' }}>
+                          {latestRun.slo_met ? 'PASSED (CI/CD Clear)' : 'FAILED (Pipeline Blocked)'}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block', marginTop: '2px' }}>
+                        Min Threshold: {latestRun.slo_minimum}% ({latestRun.slo_policy})
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="panel" style={{ padding: '16px', background: 'rgba(15, 23, 42, 0.6)' }}>
+                    <span style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assertions Evaluated</span>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '6px' }}>
+                      <span style={{ fontSize: '1.4rem', fontWeight: 700, color: '#38bdf8' }}>
+                        {latestRun.passed_assertions}
+                      </span>
+                      <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>/ {latestRun.total_assertions} passed</span>
+                      {latestRun.failed_assertions > 0 && (
+                        <span style={{ fontSize: '0.78rem', color: '#f87171', fontWeight: 600 }}>
+                          ({latestRun.failed_assertions} breach{latestRun.failed_assertions > 1 ? 'es' : ''})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="panel" style={{ padding: '16px', background: 'rgba(15, 23, 42, 0.6)' }}>
+                    <span style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Execution Performance</span>
+                    <div style={{ marginTop: '6px' }}>
+                      <span style={{ fontSize: '1.2rem', fontWeight: 700, color: '#f8fafc' }}>
+                        {latestRun.execution_time_ms} ms
+                      </span>
+                      <span style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block' }}>
+                        {latestRun.total_rows_evaluated} rows scanned
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Filtres des assertions */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      className="button"
+                      onClick={() => setValFilter('ALL')}
+                      style={{
+                        padding: '5px 12px',
+                        fontSize: '0.8rem',
+                        background: valFilter === 'ALL' ? '#0284c7' : 'transparent',
+                        color: valFilter === 'ALL' ? '#ffffff' : '#94a3b8',
+                        border: valFilter === 'ALL' ? 'none' : '1px solid rgba(148, 163, 184, 0.2)',
+                      }}
+                      type="button"
+                    >
+                      All Assertions ({latestRun.total_assertions})
+                    </button>
+                    <button
+                      className="button"
+                      onClick={() => setValFilter('FAILED')}
+                      style={{
+                        padding: '5px 12px',
+                        fontSize: '0.8rem',
+                        background: valFilter === 'FAILED' ? '#dc2626' : 'transparent',
+                        color: valFilter === 'FAILED' ? '#ffffff' : '#94a3b8',
+                        border: valFilter === 'FAILED' ? 'none' : '1px solid rgba(148, 163, 184, 0.2)',
+                      }}
+                      type="button"
+                    >
+                      Breaches / Failed ({latestRun.failed_assertions})
+                    </button>
+                    <button
+                      className="button"
+                      onClick={() => setValFilter('PASSED')}
+                      style={{
+                        padding: '5px 12px',
+                        fontSize: '0.8rem',
+                        background: valFilter === 'PASSED' ? '#059669' : 'transparent',
+                        color: valFilter === 'PASSED' ? '#ffffff' : '#94a3b8',
+                        border: valFilter === 'PASSED' ? 'none' : '1px solid rgba(148, 163, 184, 0.2)',
+                      }}
+                      type="button"
+                    >
+                      Passed ({latestRun.passed_assertions})
+                    </button>
+                  </div>
+
+                  <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                    Evaluated on: {new Date(latestRun.created_at).toLocaleString()}
+                  </span>
+                </div>
+
+                {/* Liste détaillée des assertions exécutées */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {(latestRun.assertions_result || [])
+                    .filter((ast) => {
+                      if (valFilter === 'FAILED') return ast.status === 'FAILED'
+                      if (valFilter === 'PASSED') return ast.status === 'PASSED'
+                      return true
+                    })
+                    .map((ast, idx) => {
+                      const isFailed = ast.status === 'FAILED'
+                      const isExpanded = expandedAssertionId === ast.id || expandedAssertionId === `${ast.column}-${ast.ruleType}`
+
+                      return (
+                        <div
+                          key={ast.id || idx}
+                          style={{
+                            background: isFailed ? 'rgba(239, 68, 68, 0.05)' : 'rgba(30, 41, 59, 0.35)',
+                            border: `1px solid ${isFailed ? 'rgba(239, 68, 68, 0.3)' : 'rgba(148, 163, 184, 0.12)'}`,
+                            borderRadius: '8px',
+                            padding: '14px 18px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '10px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                              <span
+                                style={{
+                                  background: isFailed ? '#dc262620' : '#05966920',
+                                  color: isFailed ? '#f87171' : '#34d399',
+                                  border: `1px solid ${isFailed ? '#ef444440' : '#10b98140'}`,
+                                  padding: '2px 8px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {ast.status}
+                              </span>
+                              <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#f8fafc' }}>
+                                {ast.column}
+                              </span>
+                              <span style={{ background: '#1e293b', padding: '2px 8px', borderRadius: '4px', fontSize: '0.78rem', color: '#cbd5e1' }}>
+                                {ast.ruleType}
+                              </span>
+                              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                                Severity: {ast.severity}
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div style={{ textAlign: 'right' }}>
+                                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: isFailed ? '#f87171' : '#34d399' }}>
+                                  {ast.passRate}%
+                                </span>
+                                <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>
+                                  {ast.violationsCount > 0 ? `${ast.violationsCount} violation(s)` : '0 violations'}
+                                </span>
+                              </div>
+
+                              {isFailed && (
+                                <button
+                                  className="button"
+                                  onClick={() => setExpandedAssertionId(isExpanded ? null : (ast.id || `${ast.column}-${ast.ruleType}`))}
+                                  style={{
+                                    padding: '3px 8px',
+                                    fontSize: '0.75rem',
+                                    background: '#1e293b',
+                                    color: '#cbd5e1',
+                                    border: '1px solid rgba(148, 163, 184, 0.2)',
+                                  }}
+                                  type="button"
+                                >
+                                  {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                                  {isExpanded ? 'Hide' : 'Details'}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>
+                            {ast.description}
+                          </p>
+
+                          {/* Détail des violations / breaches */}
+                          {isExpanded && ast.sampleViolations && ast.sampleViolations.length > 0 && (
+                            <div
+                              style={{
+                                marginTop: '6px',
+                                padding: '12px',
+                                background: '#090d16',
+                                borderRadius: '6px',
+                                border: '1px solid rgba(239, 68, 68, 0.2)',
+                              }}
+                            >
+                              <span style={{ fontSize: '0.78rem', color: '#f87171', fontWeight: 600, display: 'block', marginBottom: '8px' }}>
+                                Sample Breach Rows ({ast.sampleViolations.length} shown):
+                              </span>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {ast.sampleViolations.map((v, vIdx) => (
+                                  <div
+                                    key={vIdx}
+                                    style={{
+                                      fontSize: '0.8rem',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '10px',
+                                      color: '#e2e8f0',
+                                    }}
+                                  >
+                                    <span style={{ fontFamily: 'monospace', color: '#38bdf8', minWidth: '60px' }}>
+                                      Row #{v.row}:
+                                    </span>
+                                    <span style={{ color: '#fca5a5', fontFamily: 'monospace', background: '#1e293b', padding: '1px 6px', borderRadius: '3px' }}>
+                                      {v.value}
+                                    </span>
+                                    <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>
+                                      — {v.reason}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                </div>
+
+                {/* Historique des runs de validation */}
+                {validationRuns.length > 1 && (
+                  <div className="panel" style={{ padding: '16px', background: 'rgba(15, 23, 42, 0.6)', marginTop: '10px' }}>
+                    <h4 style={{ margin: '0 0 12px', fontSize: '0.95rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Clock size={16} style={{ color: '#38bdf8' }} />
+                      Validation Run History ({validationRuns.length} runs)
+                    </h4>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid rgba(148, 163, 184, 0.2)', color: '#94a3b8' }}>
+                            <th style={{ padding: '8px' }}>Execution Time</th>
+                            <th style={{ padding: '8px' }}>Contract</th>
+                            <th style={{ padding: '8px' }}>Status</th>
+                            <th style={{ padding: '8px' }}>Quality Score</th>
+                            <th style={{ padding: '8px' }}>Assertions</th>
+                            <th style={{ padding: '8px' }}>Duration</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {validationRuns.map((r) => (
+                            <tr key={r.id} style={{ borderBottom: '1px solid rgba(148, 163, 184, 0.08)' }}>
+                              <td style={{ padding: '8px', color: '#cbd5e1' }}>{new Date(r.created_at).toLocaleString()}</td>
+                              <td style={{ padding: '8px', color: '#38bdf8' }}>{r.contract_version || 'v1.0.0'}</td>
+                              <td style={{ padding: '8px' }}>
+                                <span
+                                  style={{
+                                    background: r.status === 'PASSED' ? '#05966920' : '#dc262620',
+                                    color: r.status === 'PASSED' ? '#34d399' : '#f87171',
+                                    padding: '2px 8px',
+                                    borderRadius: '10px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  {r.status}
+                                </span>
+                              </td>
+                              <td style={{ padding: '8px', fontWeight: 600, color: r.quality_score >= 90 ? '#34d399' : '#f87171' }}>
+                                {r.quality_score}%
+                              </td>
+                              <td style={{ padding: '8px', color: '#94a3b8' }}>
+                                {r.passed_assertions} passed / {r.failed_assertions} failed
+                              </td>
+                              <td style={{ padding: '8px', color: '#64748b' }}>{r.execution_time_ms} ms</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
         {/* AUTRES ONGLETS EN COURS DE DÉVELOPPEMENT */}
-        {!['Overview', 'Datasets', 'Profile', 'Rules', 'Contract'].includes(activeTab) && (
+        {!['Overview', 'Datasets', 'Profile', 'Rules', 'Contract', 'Validation'].includes(activeTab) && (
           <div className="coming-soon-panel">
             <span className="coming-soon-icon"><Boxes size={20} aria-hidden="true" /></span>
             <p className="panel-eyebrow">{activeTab.toUpperCase()}</p>
             <h2>Coming in the next development phase</h2>
-            <p>This workspace is prepared for {activeTab.toLowerCase()} capabilities. Next step is Deterministic Data Validation against Contract assertions.</p>
+            <p>This workspace is prepared for {activeTab.toLowerCase()} capabilities. Next step is Quality Reports & DevSecOps Audit generation.</p>
           </div>
         )}
       </section>

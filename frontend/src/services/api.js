@@ -424,3 +424,65 @@ export async function generateContract(projectId, { datasetId, version = 'v1.0.0
 
   return data
 }
+
+export async function getLatestValidation(projectId) {
+  const auth = getStoredAuth()
+  const headers = { Accept: 'application/json' }
+  if (auth?.token) {
+    headers.Authorization = `Bearer ${auth.token}`
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects/${projectId}/validation/latest`, {
+    headers,
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to fetch latest validation')
+  }
+
+  return data
+}
+
+export async function getValidationRuns(projectId) {
+  const auth = getStoredAuth()
+  const headers = { Accept: 'application/json' }
+  if (auth?.token) {
+    headers.Authorization = `Bearer ${auth.token}`
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects/${projectId}/validation/runs`, {
+    headers,
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to fetch validation history')
+  }
+
+  return data
+}
+
+export async function runValidation(projectId, { contractId, datasetId } = {}) {
+  const auth = getStoredAuth()
+  if (!auth?.token) {
+    throw new Error('Authentication required')
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects/${projectId}/validation/run`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ contractId, datasetId }),
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Validation execution failed')
+  }
+
+  return data
+}

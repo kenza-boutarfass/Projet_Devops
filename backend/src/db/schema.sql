@@ -92,6 +92,26 @@ CREATE TABLE IF NOT EXISTS data_contracts (
 
 CREATE INDEX IF NOT EXISTS idx_data_contracts_project_id ON data_contracts(project_id);
 
+-- Table des exécutions de validation de contrats (Validation Engine Runs)
+CREATE TABLE IF NOT EXISTS validation_runs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  contract_id UUID REFERENCES data_contracts(id) ON DELETE SET NULL,
+  dataset_id UUID REFERENCES datasets(id) ON DELETE CASCADE,
+  status VARCHAR(50) NOT NULL DEFAULT 'PASSED',
+  quality_score NUMERIC(5,2) NOT NULL DEFAULT 100.00,
+  slo_minimum NUMERIC(5,2) NOT NULL DEFAULT 90.00,
+  slo_policy VARCHAR(50) NOT NULL DEFAULT 'BLOCK_PIPELINE',
+  slo_met BOOLEAN NOT NULL DEFAULT TRUE,
+  total_assertions INTEGER NOT NULL DEFAULT 0,
+  passed_assertions INTEGER NOT NULL DEFAULT 0,
+  failed_assertions INTEGER NOT NULL DEFAULT 0,
+  execution_time_ms INTEGER NOT NULL DEFAULT 0,
+  total_rows_evaluated INTEGER NOT NULL DEFAULT 0,
+  assertions_result JSONB NOT NULL DEFAULT '[]'::jsonb,
+  triggered_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
-
-
+CREATE INDEX IF NOT EXISTS idx_validation_runs_project_id ON validation_runs(project_id);
+CREATE INDEX IF NOT EXISTS idx_validation_runs_created_at ON validation_runs(created_at DESC);
