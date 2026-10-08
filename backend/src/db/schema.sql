@@ -41,3 +41,21 @@ CREATE TABLE IF NOT EXISTS projects (
 CREATE INDEX IF NOT EXISTS idx_projects_owner_id ON projects(owner_id);
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
 
+-- Table des datasets
+CREATE TABLE IF NOT EXISTS datasets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  file_format VARCHAR(50) NOT NULL DEFAULT 'csv',
+  row_count INTEGER NOT NULL DEFAULT 0,
+  column_count INTEGER NOT NULL DEFAULT 0,
+  file_size_bytes INTEGER NOT NULL DEFAULT 0,
+  raw_preview JSONB,
+  profile_summary JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_datasets_project_id ON datasets(project_id);
+
+

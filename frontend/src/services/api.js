@@ -206,3 +206,88 @@ export async function deleteProject(id) {
 
   return data
 }
+
+export async function getDatasets(projectId) {
+  const auth = getStoredAuth()
+  const headers = { Accept: 'application/json' }
+  if (auth?.token) {
+    headers.Authorization = `Bearer ${auth.token}`
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects/${projectId}/datasets`, {
+    headers,
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to fetch datasets')
+  }
+
+  return data
+}
+
+export async function getDataset(projectId, datasetId) {
+  const auth = getStoredAuth()
+  const headers = { Accept: 'application/json' }
+  if (auth?.token) {
+    headers.Authorization = `Bearer ${auth.token}`
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects/${projectId}/datasets/${datasetId}`, {
+    headers,
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to fetch dataset')
+  }
+
+  return data.dataset
+}
+
+export async function uploadDataset(projectId, formData) {
+  const auth = getStoredAuth()
+  if (!auth?.token) {
+    throw new Error('Authentication required')
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects/${projectId}/datasets/upload`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+      Accept: 'application/json',
+    },
+    body: formData,
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Upload and profiling failed')
+  }
+
+  return data.dataset
+}
+
+export async function attachSampleDataset(projectId, sampleType = 'customers') {
+  const auth = getStoredAuth()
+  if (!auth?.token) {
+    throw new Error('Authentication required')
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects/${projectId}/datasets/sample`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ sampleType }),
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to attach sample dataset')
+  }
+
+  return data.dataset
+}
