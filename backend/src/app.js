@@ -1,12 +1,18 @@
 const cors = require('cors');
 const express = require('express');
 const { checkDbConnection, query } = require('./db');
+const authRoutes = require('./routes/auth');
+const { authenticate, requireRoles } = require('./middleware/auth');
 
 const app = express();
 
 app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json());
 
+// Routes d'authentification
+app.use('/api/auth', authRoutes);
+
+// Health check
 app.get('/api/health', async (req, res) => {
   const dbHealth = await checkDbConnection();
 
@@ -38,6 +44,19 @@ app.get('/api/users/roles-summary', async (req, res) => {
       error: error.message,
     });
   }
+});
+
+// Routes de test RBAC (Role-Based Access Control)
+app.get('/api/rbac/student-space', authenticate, requireRoles('STUDENT'), (req, res) => {
+  res.json({ success: true, message: `Access granted to STUDENT area for ${req.user.full_name}` });
+});
+
+app.get('/api/rbac/professor-space', authenticate, requireRoles('PROFESSOR'), (req, res) => {
+  res.json({ success: true, message: `Access granted to PROFESSOR supervision area for ${req.user.full_name}` });
+});
+
+app.get('/api/rbac/professional-space', authenticate, requireRoles('PROFESSIONAL'), (req, res) => {
+  res.json({ success: true, message: `Access granted to PROFESSIONAL workspace for ${req.user.full_name}` });
 });
 
 module.exports = app;

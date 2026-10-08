@@ -1,22 +1,28 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import AuthLayout from '../components/layout/AuthLayout.jsx'
 import AuthField from '../components/ui/AuthField.jsx'
+import { login } from '../services/api.js'
 
 function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const navigate = useNavigate()
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
     setLoading(true)
     setMessage('')
-    window.setTimeout(() => {
+    try {
+      await login({ email, password })
+      navigate('/dashboard')
+    } catch (err) {
+      setMessage(err.message || 'Login failed')
+    } finally {
       setLoading(false)
-      setMessage('Authentication is not connected yet. No sign-in was performed.')
-    }, 550)
+    }
   }
 
   return (

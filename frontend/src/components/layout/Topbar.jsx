@@ -1,15 +1,22 @@
 import { Bell, Menu, Search } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getStoredAuth } from '../../services/api.js'
 
 function Topbar({ onMenuClick }) {
   const [query, setQuery] = useState('')
   const navigate = useNavigate()
+  const auth = getStoredAuth()
+  const user = auth?.user
 
   function handleSearch(event) {
     event.preventDefault()
     navigate(`/projects${query.trim() ? `?search=${encodeURIComponent(query.trim())}` : ''}`)
   }
+
+  const initial = user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'
+  const displayName = user?.fullName || 'Guest'
+  const roleLabel = user?.role || 'PREVIEW'
 
   return (
     <header className="topbar">
@@ -34,7 +41,7 @@ function Topbar({ onMenuClick }) {
         <kbd>↵</kbd>
       </form>
       <div className="topbar-actions">
-        <span className="topbar-environment">DEMO ENVIRONMENT</span>
+        <span className="topbar-environment">{roleLabel}</span>
         <button
           aria-label="Notifications are not available in this preview"
           className="icon-button notification-button"
@@ -45,11 +52,11 @@ function Topbar({ onMenuClick }) {
           <Bell size={17} aria-hidden="true" />
           <span className="notification-dot" />
         </button>
-        <div className="topbar-user" aria-label="Preview user">
-          <span className="user-avatar">A</span>
+        <div className="topbar-user" aria-label="Authenticated user">
+          <span className="user-avatar">{initial}</span>
           <span className="topbar-user-copy">
-            <strong>Analyst</strong>
-            <small>Preview account</small>
+            <strong>{displayName}</strong>
+            <small>{roleLabel}</small>
           </span>
         </div>
       </div>

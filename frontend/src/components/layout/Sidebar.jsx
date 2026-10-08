@@ -9,6 +9,7 @@ import {
   Settings,
 } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
+import { clearStoredAuth, getStoredAuth } from '../../services/api.js'
 
 const groups = [
   {
@@ -28,6 +29,13 @@ const groups = [
 
 function Sidebar({ mobileOpen, onNavigate }) {
   const navigate = useNavigate()
+  const auth = getStoredAuth()
+  const user = auth?.user
+
+  function handleSignOut() {
+    clearStoredAuth()
+    navigate('/login')
+  }
 
   return (
     <>
@@ -52,10 +60,10 @@ function Sidebar({ mobileOpen, onNavigate }) {
         </NavLink>
 
         <div className="sidebar-workspace">
-          <span className="workspace-avatar">DQ</span>
+          <span className="workspace-avatar">{user ? user.role.charAt(0) : 'DQ'}</span>
           <span>
-            <strong>Workspace</strong>
-            <small>Personal environment</small>
+            <strong>{user ? `${user.role}` : 'Workspace'}</strong>
+            <small>{user ? user.fullName : 'Personal environment'}</small>
           </span>
           <ArrowUpRight size={14} aria-hidden="true" />
         </div>
@@ -103,13 +111,13 @@ function Sidebar({ mobileOpen, onNavigate }) {
           <div className="preview-note">
             <span className="preview-note-mark" />
             <span>
-              <strong>UI preview</strong>
-              <small>Demo data only</small>
+              <strong>{user ? `${user.role} Session` : 'UI preview'}</strong>
+              <small>{user ? user.email : 'Demo data only'}</small>
             </span>
           </div>
-          <button className="nav-link signout-link" onClick={() => navigate('/')} type="button">
+          <button className="nav-link signout-link" onClick={handleSignOut} type="button">
             <LogOut size={17} strokeWidth={1.7} aria-hidden="true" />
-            <span>Exit preview</span>
+            <span>{user ? 'Sign out' : 'Exit preview'}</span>
           </button>
         </div>
       </aside>

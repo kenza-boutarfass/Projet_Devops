@@ -1,8 +1,9 @@
 import { Check, Minus } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import AuthLayout from '../components/layout/AuthLayout.jsx'
 import AuthField from '../components/ui/AuthField.jsx'
+import { register } from '../services/api.js'
 
 function Register() {
   const [profile, setProfile] = useState('student')
@@ -12,9 +13,10 @@ function Register() {
   const [confirmation, setConfirmation] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
   const strength = useMemo(() => getPasswordStrength(password), [password])
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
     if (password !== confirmation) {
       setMessage('Passwords do not match.')
@@ -22,10 +24,19 @@ function Register() {
     }
     setLoading(true)
     setMessage('')
-    window.setTimeout(() => {
+    try {
+      await register({
+        email,
+        password,
+        fullName: name,
+        role: profile.toUpperCase(),
+      })
+      navigate('/dashboard')
+    } catch (err) {
+      setMessage(err.message || 'Registration failed')
+    } finally {
       setLoading(false)
-      setMessage('Registration is not connected yet. No account was created.')
-    }, 550)
+    }
   }
 
   return (
