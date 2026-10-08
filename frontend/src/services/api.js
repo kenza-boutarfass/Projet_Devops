@@ -291,3 +291,136 @@ export async function attachSampleDataset(projectId, sampleType = 'customers') {
 
   return data.dataset
 }
+
+export async function getRules(projectId, status) {
+  const auth = getStoredAuth()
+  const headers = { Accept: 'application/json' }
+  if (auth?.token) {
+    headers.Authorization = `Bearer ${auth.token}`
+  }
+
+  const queryParam = status && status !== 'ALL' ? `?status=${status}` : ''
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects/${projectId}/rules${queryParam}`, {
+    headers,
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to fetch rules')
+  }
+
+  return data
+}
+
+export async function discoverRules(projectId, datasetId) {
+  const auth = getStoredAuth()
+  if (!auth?.token) {
+    throw new Error('Authentication required')
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects/${projectId}/rules/discover`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ datasetId }),
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Rule discovery failed')
+  }
+
+  return data
+}
+
+export async function updateRuleStatus(projectId, ruleId, status) {
+  const auth = getStoredAuth()
+  if (!auth?.token) {
+    throw new Error('Authentication required')
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects/${projectId}/rules/${ruleId}/status`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ status }),
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to update rule status')
+  }
+
+  return data.rule
+}
+
+export async function deleteRule(projectId, ruleId) {
+  const auth = getStoredAuth()
+  if (!auth?.token) {
+    throw new Error('Authentication required')
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects/${projectId}/rules/${ruleId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+      Accept: 'application/json',
+    },
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to delete rule')
+  }
+
+  return data
+}
+
+export async function getContract(projectId) {
+  const auth = getStoredAuth()
+  const headers = { Accept: 'application/json' }
+  if (auth?.token) {
+    headers.Authorization = `Bearer ${auth.token}`
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects/${projectId}/contract`, {
+    headers,
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to fetch contract')
+  }
+
+  return data
+}
+
+export async function generateContract(projectId, { datasetId, version = 'v1.0.0' } = {}) {
+  const auth = getStoredAuth()
+  if (!auth?.token) {
+    throw new Error('Authentication required')
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects/${projectId}/contract/generate`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ datasetId, version }),
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to generate contract')
+  }
+
+  return data
+}

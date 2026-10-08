@@ -4,6 +4,8 @@ const { checkDbConnection, query } = require('./db');
 const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
 const datasetRoutes = require('./routes/datasets');
+const ruleRoutes = require('./routes/rules');
+const contractRoutes = require('./routes/contracts');
 const { authenticate, requireRoles } = require('./middleware/auth');
 
 const app = express();
@@ -11,10 +13,12 @@ const app = express();
 app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json());
 
-// Routes d'authentification, projets et datasets
+// Routes d'authentification, projets, datasets, règles de qualité et contrats
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/projects', datasetRoutes);
+app.use('/api/projects', ruleRoutes);
+app.use('/api/projects', contractRoutes);
 
 // Health check
 app.get('/api/health', async (req, res) => {

@@ -58,4 +58,40 @@ CREATE TABLE IF NOT EXISTS datasets (
 
 CREATE INDEX IF NOT EXISTS idx_datasets_project_id ON datasets(project_id);
 
+-- Table des règles de qualité (Human-in-the-loop & AI Discovery)
+CREATE TABLE IF NOT EXISTS quality_rules (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  dataset_id UUID REFERENCES datasets(id) ON DELETE CASCADE,
+  column_name VARCHAR(255) NOT NULL,
+  rule_type VARCHAR(100) NOT NULL,
+  params JSONB DEFAULT '{}',
+  severity VARCHAR(50) NOT NULL DEFAULT 'ERROR',
+  description TEXT NOT NULL,
+  rationale TEXT,
+  status VARCHAR(50) NOT NULL DEFAULT 'PROPOSED',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_quality_rules_project_id ON quality_rules(project_id);
+CREATE INDEX IF NOT EXISTS idx_quality_rules_status ON quality_rules(status);
+
+-- Table des contrats de données exécutables (Data Contracts)
+CREATE TABLE IF NOT EXISTS data_contracts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  dataset_id UUID REFERENCES datasets(id) ON DELETE CASCADE,
+  version VARCHAR(50) NOT NULL DEFAULT 'v1.0.0',
+  status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+  contract_spec JSONB NOT NULL,
+  yaml_content TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_data_contracts_project_id ON data_contracts(project_id);
+
+
+
 
