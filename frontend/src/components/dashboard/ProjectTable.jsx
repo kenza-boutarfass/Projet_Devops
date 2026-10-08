@@ -25,9 +25,9 @@ function ProjectTable({ projects }) {
                 </Link>
                 <span className="table-project-description">{project.description}</span>
               </td>
-              <td className="table-mono">{project.dataset}</td>
-              <td>{project.updated}</td>
-              <td><span className="quality-value">{project.score}%</span></td>
+              <td className="table-mono">{project.dataset_name || project.dataset || 'Not connected'}</td>
+              <td>{project.updated_at ? new Date(project.updated_at).toLocaleDateString() : (project.updated || 'Recent')}</td>
+              <td><span className="quality-value">{project.quality_score ?? project.score ?? 0}%</span></td>
               <td><StatusBadge status={project.status} /></td>
               <td>
                 <Link

@@ -2,6 +2,7 @@ const cors = require('cors');
 const express = require('express');
 const { checkDbConnection, query } = require('./db');
 const authRoutes = require('./routes/auth');
+const projectRoutes = require('./routes/projects');
 const { authenticate, requireRoles } = require('./middleware/auth');
 
 const app = express();
@@ -9,8 +10,9 @@ const app = express();
 app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json());
 
-// Routes d'authentification
+// Routes d'authentification et de projets
 app.use('/api/auth', authRoutes);
+app.use('/api/projects', projectRoutes);
 
 // Health check
 app.get('/api/health', async (req, res) => {

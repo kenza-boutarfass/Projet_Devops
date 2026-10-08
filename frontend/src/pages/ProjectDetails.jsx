@@ -1,9 +1,9 @@
-import { useState } from 'react'
-import { ArrowLeft, ArrowUpRight, Boxes, FileCheck2, Gauge, ScanSearch, ShieldCheck } from 'lucide-react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { ArrowLeft, ArrowUpRight, Boxes, FileCheck2, Gauge, RefreshCw, ScanSearch, ShieldCheck, UserCheck } from 'lucide-react'
+import { Link, useParams } from 'react-router-dom'
 import PageHeader from '../components/ui/PageHeader.jsx'
 import StatusBadge from '../components/ui/StatusBadge.jsx'
-import { demoProjects } from '../services/mockData.js'
+import { getProject, getStoredAuth } from '../services/api.js'
 
 const tabs = [
   { label: 'Overview', icon: Gauge },
@@ -17,39 +17,81 @@ const tabs = [
 
 function ProjectDetails() {
   const { id } = useParams()
-  const location = useLocation()
-  const project = location.state?.previewProject || demoProjects.find((item) => item.id === id)
+  const [projectData, setProjectData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [isSupervision, setIsSupervision] = useState(false)
   const [activeTab, setActiveTab] = useState('Overview')
+  const auth = getStoredAuth()
 
-  if (!project) {
+  useEffect(() => {
+    async function loadProject() {
+      setLoading(true)
+      setError('')
+      try {
+        const data = await getProject(id)
+        setProjectData(data.project)
+        setIsSupervision(data.isSupervisionView)
+      } catch (err) {
+        setError(err.message || 'Failed to load project details')
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadProject()
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="page-content page-enter">
+        <Link className="back-link workspace-back-link" to="/projects"><ArrowLeft size={15} /> Back to projects</Link>
+        <div className="empty-state">
+          <RefreshCw className="button-spinner" size={24} />
+          <h2>Loading project details...</h2>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !projectData) {
     return (
       <div className="page-content page-enter">
         <Link className="back-link workspace-back-link" to="/projects"><ArrowLeft size={15} /> Back to projects</Link>
         <div className="empty-state project-not-found">
           <Boxes size={23} aria-hidden="true" />
           <h1>Project not found</h1>
-          <p>This preview does not persist new projects. Create another preview project or choose a demo project.</p>
+          <p>{error || 'This project does not exist or you do not have permission to view it.'}</p>
           <Link className="button button-primary" to="/projects">View projects</Link>
         </div>
       </div>
     )
   }
 
+  const project = projectData
+
   return (
     <div className="page-content page-enter project-details-page">
       <Link className="back-link workspace-back-link" to="/projects"><ArrowLeft size={15} /> All projects</Link>
+
+      {isSupervision && (
+        <div style={{ background: '#1e3a8a30', border: '1px solid #3b82f650', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#93c5fd' }}>
+          <UserCheck size={18} />
+          <span><strong>Supervision Mode:</strong> You are reviewing student project submitted by <strong>{project.owner_name}</strong> ({project.owner_email}). Modifications are disabled.</span>
+        </div>
+      )}
+
       <PageHeader
-        eyebrow={`PROJECT / ${project.id.toUpperCase()}`}
+        eyebrow={`PROJECT / ${(project.slug || project.id).toUpperCase()}`}
         title={project.name}
-        description={project.description}
-        actions={<StatusBadge status={project.status || 'Preview'} />}
+        description={project.description || 'No description provided.'}
+        actions={<StatusBadge status={project.status || 'Healthy'} />}
       />
       <div className="project-summary-strip">
         <div><span>ENVIRONMENT</span><strong>{project.environment || 'Development'}</strong></div>
-        <div><span>DATASETS</span><strong>{project.dataset || 'Not connected'}</strong></div>
-        <div><span>LAST ANALYSIS</span><strong>{project.updated || 'Not run'}</strong></div>
-        <div><span>QUALITY SCORE</span><strong>{project.score ? `${project.score}%` : '—'}</strong></div>
-        <span className="demo-label">PREVIEW</span>
+        <div><span>DATASET</span><strong>{project.dataset_name || 'Not connected'}</strong></div>
+        <div><span>OWNER</span><strong>{project.owner_name || auth?.user?.fullName || 'User'}</strong></div>
+        <div><span>QUALITY SCORE</span><strong>{project.quality_score ? `${project.quality_score}%` : '—'}</strong></div>
+        <span className="demo-label" style={{ background: '#10b98120', color: '#34d399' }}>POSTGRES PERSISTED</span>
       </div>
       <div aria-label="Project sections" className="detail-tabs" role="tablist">
         {tabs.map(({ label, icon: Icon }) => (

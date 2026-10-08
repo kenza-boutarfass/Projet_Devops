@@ -98,3 +98,111 @@ export async function getMe() {
   setStoredAuth({ token: auth.token, user: data.user })
   return data.user
 }
+
+export async function getProjects() {
+  const auth = getStoredAuth()
+  const headers = { Accept: 'application/json' }
+  if (auth?.token) {
+    headers.Authorization = `Bearer ${auth.token}`
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects`, {
+    headers,
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to fetch projects')
+  }
+
+  return data
+}
+
+export async function getProject(id) {
+  const auth = getStoredAuth()
+  const headers = { Accept: 'application/json' }
+  if (auth?.token) {
+    headers.Authorization = `Bearer ${auth.token}`
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects/${id}`, {
+    headers,
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to fetch project details')
+  }
+
+  return data
+}
+
+export async function createProject({ name, description, environment, datasetName }) {
+  const auth = getStoredAuth()
+  if (!auth?.token) {
+    throw new Error('You must be signed in to create a project')
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ name, description, environment, datasetName }),
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to create project')
+  }
+
+  return data.project
+}
+
+export async function updateProject(id, updateData) {
+  const auth = getStoredAuth()
+  if (!auth?.token) {
+    throw new Error('Authentication required')
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects/${id}`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(updateData),
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to update project')
+  }
+
+  return data.project
+}
+
+export async function deleteProject(id) {
+  const auth = getStoredAuth()
+  if (!auth?.token) {
+    throw new Error('Authentication required')
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/projects/${id}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+      Accept: 'application/json',
+    },
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to delete project')
+  }
+
+  return data
+}

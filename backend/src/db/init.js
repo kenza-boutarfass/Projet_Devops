@@ -97,12 +97,63 @@ async function initDatabase() {
       console.log(`   👤 User seeded: ${res.rows[0].email} [Role: ${res.rows[0].role}] (ID: ${res.rows[0].id})`);
     }
 
-    // 5. Afficher le récapitulatif
+    // 5. Insertion des projets initiaux (seed)
+    console.log('📂 Seeding initial projects for demo users...');
+    const studentUser = (await appClient.query("SELECT id FROM users WHERE email = 'student@example.com'")).rows[0];
+    const proUser = (await appClient.query("SELECT id FROM users WHERE email = 'pro@example.com'")).rows[0];
+
+    if (studentUser) {
+      const studentProjects = [
+        {
+          name: 'Customer Core',
+          slug: 'customer-core',
+          description: 'Customer identity and account reference data.',
+          dataset: 'customers_2025.csv',
+          score: 96,
+          status: 'Healthy',
+          environment: 'Development',
+        },
+        {
+          name: 'Commerce Events',
+          slug: 'commerce-events',
+          description: 'Order lifecycle events from digital channels.',
+          dataset: 'orders_stream.parquet',
+          score: 84,
+          status: 'Needs review',
+          environment: 'Staging',
+        },
+      ];
+
+      for (const p of studentProjects) {
+        await appClient.query(
+          `INSERT INTO projects (name, slug, description, dataset_name, quality_score, status, environment, owner_id)
+           SELECT $1::varchar, $2::varchar, $3::text, $4::varchar, $5::int, $6::varchar, $7::varchar, $8::uuid
+           WHERE NOT EXISTS (SELECT 1 FROM projects WHERE slug = $2::varchar AND owner_id = $8::uuid)`,
+          [p.name, p.slug, p.description, p.dataset, p.score, p.status, p.environment, studentUser.id]
+        );
+        console.log(`   📁 Project seeded for Student: ${p.name}`);
+      }
+    }
+
+    if (proUser) {
+      await appClient.query(
+        `INSERT INTO projects (name, slug, description, dataset_name, quality_score, status, environment, owner_id)
+         SELECT $1::varchar, $2::varchar, $3::text, $4::varchar, $5::int, $6::varchar, $7::varchar, $8::uuid
+         WHERE NOT EXISTS (SELECT 1 FROM projects WHERE slug = $2::varchar AND owner_id = $8::uuid)`,
+        ['Finance Ledger', 'finance-ledger', 'Monthly ledger exports for reconciliation.', 'ledger_q4.xlsx', 68, 'Failed', 'Production', proUser.id]
+      );
+      console.log(`   📁 Project seeded for Professional: Finance Ledger`);
+    }
+
+    // 6. Afficher le récapitulatif
     const countRes = await appClient.query('SELECT role, COUNT(*) AS count FROM users GROUP BY role');
     console.log('\n📊 Summary of users by role in database:');
     countRes.rows.forEach((r) => {
       console.log(`   - ${r.role}: ${r.count} user(s)`);
     });
+
+    const projectCountRes = await appClient.query('SELECT COUNT(*) AS count FROM projects');
+    console.log(`   - TOTAL PROJECTS: ${projectCountRes.rows[0].count}`);
 
     console.log('\n✨ Database setup & initialization completed successfully!\n');
   } catch (err) {

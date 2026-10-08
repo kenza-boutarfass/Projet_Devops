@@ -2,35 +2,37 @@ import { useState } from 'react'
 import { ArrowLeft, Check, ChevronDown, FolderPlus } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import PageHeader from '../components/ui/PageHeader.jsx'
+import { createProject } from '../services/api.js'
 
 function CreateProject() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [environment, setEnvironment] = useState('Development')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
     if (name.trim().length < 3) {
       setError('Project name must be at least 3 characters.')
       return
     }
-    const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')
-    if (id.replaceAll('-', '').length < 3) {
-      setError('Project name must include at least 3 letters or numbers.')
-      return
+
+    setLoading(true)
+    setError('')
+    try {
+      const created = await createProject({
+        name: name.trim(),
+        description: description.trim(),
+        environment,
+      })
+      navigate(`/projects/${created.id}`)
+    } catch (err) {
+      setError(err.message || 'Failed to create project')
+    } finally {
+      setLoading(false)
     }
-    navigate(`/projects/${id}`, {
-      state: {
-        previewProject: {
-          id,
-          name: name.trim(),
-          description: description.trim() || 'A new project workspace.',
-          environment,
-        },
-      },
-    })
   }
 
   return (
