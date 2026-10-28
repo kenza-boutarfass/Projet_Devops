@@ -1,11 +1,11 @@
 import {
   Activity,
   ArrowUpRight,
-  ClipboardCheck,
-  FileCheck2,
-  FolderKanban,
-  Gauge,
+  Bot,
+  ClipboardList,
+  FileText,
   LogOut,
+  Mail,
   Settings,
 } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
@@ -13,16 +13,17 @@ import { clearStoredAuth, getStoredAuth } from '../../services/api.js'
 
 const groups = [
   {
-    label: 'Overview',
-    items: [{ label: 'Dashboard', to: '/dashboard', icon: Gauge }],
+    label: 'My workspace',
+    items: [{ label: 'Dashboard', to: '/dashboard', icon: Activity }],
   },
   {
     label: 'Workspace',
     items: [
-      { label: 'Projects', to: '/projects', icon: FolderKanban },
-      { label: 'Analyses', icon: Activity, soon: true },
-      { label: 'Contracts', icon: FileCheck2, soon: true },
-      { label: 'Reports', icon: ClipboardCheck, soon: true },
+      { label: 'Agent Workspace', to: '/agent', icon: Bot },
+      { label: 'My Tasks', to: '/tasks', icon: ClipboardList },
+      { label: 'Activity History', to: '/activity', icon: Activity },
+      { label: 'My Documents', icon: FileText, soon: true },
+      { label: 'Email Assistant', icon: Mail, soon: true },
     ],
   },
 ]
@@ -54,13 +55,13 @@ function Sidebar({ mobileOpen, onNavigate }) {
             <span />
           </span>
           <span className="brand-copy">
-            <strong>Data Quality</strong>
-            <small>Platform</small>
+            <strong>Take Over</strong>
+            <small>My Work</small>
           </span>
         </NavLink>
 
         <div className="sidebar-workspace">
-          <span className="workspace-avatar">{user ? user.role.charAt(0) : 'DQ'}</span>
+          <span className="workspace-avatar">{user ? user.role.charAt(0) : 'W'}</span>
           <span>
             <strong>{user ? `${user.role}` : 'Workspace'}</strong>
             <small>{user ? user.fullName : 'Personal environment'}</small>
@@ -77,7 +78,7 @@ function Sidebar({ mobileOpen, onNavigate }) {
                   <div className="nav-link nav-link-disabled" key={label} aria-disabled="true">
                     <Icon size={17} strokeWidth={1.7} aria-hidden="true" />
                     <span>{label}</span>
-                    <small>Soon</small>
+                    <small>Coming soon</small>
                   </div>
                 ) : (
                   <NavLink
@@ -111,13 +112,13 @@ function Sidebar({ mobileOpen, onNavigate }) {
           <div className="preview-note">
             <span className="preview-note-mark" />
             <span>
-              <strong>{user ? `${user.role} Session` : 'UI preview'}</strong>
-              <small>{user ? user.email : 'Demo data only'}</small>
+              <strong>{user ? `${user.role} Workspace` : 'Sign in required'}</strong>
+              <small>{user ? user.email : 'Your personal workspace'}</small>
             </span>
           </div>
           <button className="nav-link signout-link" onClick={handleSignOut} type="button">
             <LogOut size={17} strokeWidth={1.7} aria-hidden="true" />
-            <span>{user ? 'Sign out' : 'Exit preview'}</span>
+            <span>{user ? 'Sign out' : 'Sign in'}</span>
           </button>
         </div>
       </aside>

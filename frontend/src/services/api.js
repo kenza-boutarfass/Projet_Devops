@@ -118,6 +118,66 @@ export async function getProjects() {
   return data
 }
 
+async function authenticatedRequest(path, options = {}) {
+  const auth = getStoredAuth()
+  if (!auth?.token) {
+    throw new Error('Please sign in to access your workspace.')
+  }
+
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}${path}`, {
+    ...options,
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${auth.token}`,
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...options.headers,
+    },
+  })
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message || `Request failed with status ${response.status}`)
+  }
+  return data
+}
+
+export async function getTasks() {
+  return authenticatedRequest('/tasks')
+}
+
+export async function updateTask(id, updates) {
+  return authenticatedRequest(`/tasks/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  })
+}
+
+export async function completeTask(id) {
+  return authenticatedRequest(`/tasks/${encodeURIComponent(id)}/complete`, { method: 'POST' })
+}
+
+export async function createAgentExecution(request) {
+  return authenticatedRequest('/agent/executions', {
+    method: 'POST',
+    body: JSON.stringify({ request }),
+  })
+}
+
+export async function getAgentExecutions() {
+  return authenticatedRequest('/agent/executions')
+}
+
+export async function approveAgentExecution(id) {
+  return authenticatedRequest(`/agent/executions/${encodeURIComponent(id)}/approve`, { method: 'POST' })
+}
+
+export async function rejectAgentExecution(id) {
+  return authenticatedRequest(`/agent/executions/${encodeURIComponent(id)}/reject`, { method: 'POST' })
+}
+
+export async function getAgentActivity() {
+  return authenticatedRequest('/agent/activity')
+}
+
 export async function getProject(id) {
   const auth = getStoredAuth()
   const headers = { Accept: 'application/json' }

@@ -1,34 +1,34 @@
 import { useEffect, useRef, useState } from 'react'
-import { ClipboardCheck, GraduationCap, Workflow } from 'lucide-react'
+import { BriefcaseBusiness, GraduationCap, Presentation } from 'lucide-react'
 import ProfileCard from './ProfileCard.jsx'
 
 const profiles = [
   {
     id: 'student',
-    title: 'Students',
-    discipline: 'LEARN / BUILD',
-    description: 'Learn data quality through real projects, automated analysis, and executable quality rules.',
-    capabilities: ['Create projects', 'Explore datasets', 'Analyze data quality', 'Discover quality rules', 'Generate reports'],
-    footer: 'A practical path from concepts to applied work',
+    title: 'Student',
+    discipline: 'STUDY / PREPARE',
+    description: 'Organize your studies, summarize courses, prepare exams, create revision notes, and manage assignments.',
+    capabilities: ['Plan study tasks', 'Work with course documents', 'Prepare revision materials', 'Track assignments'],
+    footer: 'A workspace for your studies',
     icon: GraduationCap,
   },
   {
     id: 'professor',
-    title: 'Professors',
-    discipline: 'TEACH / REVIEW',
-    description: 'Monitor student projects, review analyses, and gain a clear view of data quality and progress.',
-    capabilities: ['Follow student projects', 'Review analyses', 'Monitor quality', 'Access reports', 'Track progress'],
-    footer: 'A shared view for teaching and review',
-    icon: ClipboardCheck,
+    title: 'Professor',
+    discipline: 'TEACH / ORGANIZE',
+    description: 'Prepare exams and teaching materials, work with documents, and organize academic activities.',
+    capabilities: ['Organize academic tasks', 'Prepare teaching content', 'Work with course documents', 'Plan activities'],
+    footer: 'Support for teaching and academic work',
+    icon: Presentation,
   },
   {
     id: 'professional',
-    title: 'Professionals',
-    discipline: 'ENGINEER / OPERATE',
-    description: 'Transform complex datasets into reliable data contracts, automated validations, and actionable quality insights.',
-    capabilities: ['Manage projects', 'Analyze datasets', 'Define quality rules', 'Generate data contracts', 'Automate validation'],
-    footer: 'Quality workflows designed for delivery',
-    icon: Workflow,
+    title: 'Professional',
+    discipline: 'PLAN / DELIVER',
+    description: 'Organize work, manage documents, plan tasks, prepare professional content, and streamline email workflows.',
+    capabilities: ['Plan work tasks', 'Work with documents', 'Prepare professional content', 'Organize email workflows'],
+    footer: 'A more organized working day',
+    icon: BriefcaseBusiness,
   },
 ]
 
@@ -74,12 +74,11 @@ function AudienceSection() {
       <div className="landing-container">
         <div className="audience-heading-row">
           <div>
-            <p className="section-kicker">ONE PLATFORM · THREE DATA JOURNEYS</p>
-            <h2 id="audience-heading">Built for every data journey</h2>
+            <p className="section-kicker">ONE PLATFORM · THREE PROFILES</p>
+            <h2 id="audience-heading">Built around the way you work</h2>
           </div>
           <p>
-            Whether you&apos;re learning, teaching, or working with real-world data,
-            the platform provides a path to understand, validate, and improve data quality.
+            Whether you&apos;re studying, teaching, or working professionally, your profile shapes a workspace for organizing tasks and working with your materials.
           </p>
         </div>
         <div className="audience-cards">
@@ -87,7 +86,7 @@ function AudienceSection() {
             <ProfileCard index={index} isVisible={isVisible} key={profile.id} profile={profile} />
           ))}
         </div>
-        <p className="audience-disclaimer">Profile capabilities are part of the product direction and are not all available in this preview.</p>
+        <p className="audience-disclaimer">Some document, study-material, and email capabilities are planned and are not available yet.</p>
       </div>
     </section>
   )

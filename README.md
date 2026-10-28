@@ -1,51 +1,32 @@
-# Projet_Devops
+# Take Over My Work
 
-## From Messy Data to Executable Quality
+## Your AI Agent. Your Work. Under Control.
 
-## Project Concept
+Take Over My Work is a personal workspace for students, professors, and professionals. It is designed to help people organize tasks and, over time, work with their academic and professional documents and workflows.
 
-The platform is an AI-powered data quality platform that analyzes datasets and their documentation, proposes data quality rules using AI, lets humans review those rules, generates executable Data Contracts, validates datasets, and eventually integrates quality validation into CI/CD. AI will help discover and explain candidate rules; deterministic validation will remain responsible for executing approved rules and reporting results.
+The current agent capability is deliberately limited: it can plan the creation of a personal task, request the user's approval, create the task after approval, and verify that it was saved. It does not currently read documents, summarize courses, connect to email, or send messages.
 
-## Current Architecture
+## Available now
 
-```text
-React
-	↓
-REST API
-	↓
-Express
-	↓
-PostgreSQL (coming next)
-	↓
-AI Engine (coming later)
-```
+- Account registration and sign-in with Student, Professor, and Professional profiles.
+- Personal tasks: view, start, and complete tasks.
+- Agent-assisted task creation with explicit human approval.
+- Activity history for agent plans, approvals, and task actions.
+- Authenticated API access with user-scoped task data.
 
-## Current Stack
+## Planned
 
-- React
-- Vite
-- JavaScript
-- Node.js
-- Express.js
-- REST API
-- PostgreSQL (planned)
-- AI (planned)
-- Docker (planned)
-- GitHub Actions (planned)
-- Playwright (planned)
-- Vitest (planned)
-- Prometheus/Grafana (planned)
+- Private document upload and document assistance.
+- Study guides, teaching materials, and professional content preparation.
+- Email provider connection, message reading, and draft assistance.
+- Further agent tools and workflows.
 
-## Project Structure
+Planned capabilities are shown as such in the application and are not simulated.
 
-```text
-Projet_Devops/
-├── backend/
-├── frontend/
-├── photos/
-├── .gitignore
-└── README.md
-```
+## Stack
+
+- Frontend: React, React Router, Vite, JavaScript.
+- Backend: Node.js, Express, PostgreSQL, JWT authentication.
 
 ## Development
 
@@ -54,12 +35,19 @@ Projet_Devops/
 ```bash
 cd backend
 npm install
+npm run db:init
 npm run dev
 ```
 
 Backend URL: `http://localhost:5000`
 
 Health endpoint: `http://localhost:5000/api/health`
+
+Backend tests:
+
+```bash
+npm test
+```
 
 ### Frontend
 

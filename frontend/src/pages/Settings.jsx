@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { KeyRound, SlidersHorizontal, UserRound, ShieldCheck } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader.jsx'
+import { getStoredAuth } from '../services/api.js'
 
 const sections = [
   { id: 'profile', label: 'Profile', icon: UserRound },
@@ -11,11 +12,11 @@ const sections = [
 
 function Settings() {
   const [activeSection, setActiveSection] = useState('profile')
-  const [message, setMessage] = useState('')
+  const user = getStoredAuth()?.user
 
   return (
     <div className="page-content page-enter settings-page">
-      <PageHeader eyebrow="SYSTEM" title="Settings" description="Preferences for this local product preview." />
+      <PageHeader eyebrow="PERSONAL WORKSPACE" title="Settings" description="Review your account details and workspace options." />
       <div className="settings-layout">
         <nav aria-label="Settings sections" className="settings-nav">
           {sections.map(({ id, label, icon: Icon }) => (
@@ -23,7 +24,7 @@ function Settings() {
               aria-current={activeSection === id ? 'page' : undefined}
               className={activeSection === id ? 'settings-nav-item settings-nav-active' : 'settings-nav-item'}
               key={id}
-              onClick={() => { setActiveSection(id); setMessage('') }}
+              onClick={() => setActiveSection(id)}
               type="button"
             >
               <Icon size={16} aria-hidden="true" /> {label}
@@ -33,32 +34,32 @@ function Settings() {
         <section className="settings-panel">
           <div className="settings-panel-heading">
             <div><p className="panel-eyebrow">{activeSection.toUpperCase()}</p><h2>{sections.find((item) => item.id === activeSection)?.label}</h2></div>
-            <span className="demo-label">VISUAL PREVIEW</span>
+            <span className="demo-label">ACCOUNT DETAILS</span>
           </div>
           {activeSection === 'profile' && (
             <div className="settings-fields">
-              <label className="field-group">Display name<input defaultValue="Analyst" /></label>
-              <label className="field-group">Email<input defaultValue="analyst@example.com" type="email" /></label>
+              <label className="field-group">Display name<input readOnly value={user?.fullName || 'Not signed in'} /></label>
+              <label className="field-group">Email<input readOnly value={user?.email || 'Not signed in'} type="email" /></label>
+              <p className="settings-help">Profile details are managed by your account. Editing them is not available here yet.</p>
             </div>
           )}
           {activeSection === 'preferences' && (
             <div className="settings-fields">
-              <label className="field-group">Timezone<select defaultValue="UTC"><option>UTC</option><option>Europe/Paris</option><option>America/New_York</option></select></label>
-              <label className="settings-toggle"><span><strong>Product updates</strong><small>Receive updates when features become available.</small></span><input defaultChecked type="checkbox" /></label>
+              <div className="settings-placeholder"><SlidersHorizontal size={19} /><h3>Preferences are coming soon</h3><p>Personalized preferences are not saved or applied yet.</p></div>
             </div>
           )}
           {activeSection === 'security' && (
-            <div className="settings-placeholder"><ShieldCheck size={19} /><h3>Account security is not connected</h3><p>Authentication and security controls will be added with the backend identity phase.</p></div>
+            <div className="settings-placeholder"><ShieldCheck size={19} /><h3>Account security</h3><p>Sign-in and role-based access are managed by the application backend. Password changes and additional security controls are not available here yet.</p></div>
           )}
           {activeSection === 'api' && (
             <div className="settings-fields">
-              <label className="field-group">API base URL<input readOnly value={import.meta.env.VITE_API_URL || 'Not configured'} /></label>
-              <p className="settings-help">No API keys are stored in this preview. The current service only calls the health endpoint.</p>
+              <label className="field-group">API base URL<input readOnly value={import.meta.env.VITE_API_URL || 'http://localhost:5000/api'} /></label>
+              <p className="settings-help">This workspace uses the application API. No API keys are stored in the browser settings.</p>
             </div>
           )}
           <div className="settings-panel-footer">
-            <p>{message || 'Changes are visual only and are not saved.'}</p>
-            <button className="button button-primary" onClick={() => setMessage('Preview only: changes were not saved.')} type="button">Save changes</button>
+            <p>Workspace preferences are not editable here yet.</p>
+            <button className="button button-primary" disabled type="button">Save changes · Coming soon</button>
           </div>
         </section>
       </div>

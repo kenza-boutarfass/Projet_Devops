@@ -11,7 +11,7 @@ function Topbar({ onMenuClick }) {
 
   function handleSearch(event) {
     event.preventDefault()
-    navigate(`/projects${query.trim() ? `?search=${encodeURIComponent(query.trim())}` : ''}`)
+    navigate(`/tasks${query.trim() ? `?search=${encodeURIComponent(query.trim())}` : ''}`)
   }
 
   const initial = user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'
@@ -30,11 +30,11 @@ function Topbar({ onMenuClick }) {
       </button>
       <form className="topbar-search" onSubmit={handleSearch} role="search">
         <Search size={16} aria-hidden="true" />
-        <label className="sr-only" htmlFor="global-search">Search projects</label>
+        <label className="sr-only" htmlFor="global-search">Search tasks</label>
         <input
           id="global-search"
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search projects..."
+          placeholder="Search your tasks..."
           type="search"
           value={query}
         />

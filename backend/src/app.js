@@ -8,6 +8,8 @@ const ruleRoutes = require('./routes/rules');
 const contractRoutes = require('./routes/contracts');
 const validationRoutes = require('./routes/validations');
 const reportRoutes = require('./routes/reports');
+const agentRoutes = require('./routes/agent');
+const taskRoutes = require('./routes/tasks');
 const { authenticate, requireRoles } = require('./middleware/auth');
 
 const app = express();
@@ -23,6 +25,8 @@ app.use('/api/projects', ruleRoutes);
 app.use('/api/projects', contractRoutes);
 app.use('/api/projects', validationRoutes);
 app.use('/api/projects', reportRoutes);
+app.use('/api/agent', agentRoutes);
+app.use('/api/tasks', taskRoutes);
 
 // Health check
 app.get('/api/health', async (req, res) => {

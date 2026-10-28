@@ -1,4 +1,4 @@
-import { ArrowLeft, Database, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowLeft, BookOpen, ClipboardList, FileText } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 function AuthLayout({ children, heading, intro, mode }) {
@@ -9,33 +9,33 @@ function AuthLayout({ children, heading, intro, mode }) {
           <span className="brand-mark brand-mark-light" aria-hidden="true">
             <span /><span /><span />
           </span>
-          <span>Data Quality Platform</span>
+          <span>Take Over My Work</span>
         </Link>
         <div className="auth-aside-content">
-          <p className="eyebrow eyebrow-gold">ENGINEERED FOR TRUST</p>
-          <h2>Make quality part of the data lifecycle.</h2>
-          <p>Bring context, people and deterministic checks into one reviewable workflow.</p>
+          <p className="eyebrow eyebrow-gold">YOUR WORK, UNDER CONTROL</p>
+          <h2>Turn your instructions into organized work.</h2>
+          <p>Choose your profile and build a personal workspace for study, teaching, or professional tasks.</p>
           <div className="auth-capabilities">
-            <span><Database size={16} aria-hidden="true" /> Understand the data</span>
-            <span><Sparkles size={16} aria-hidden="true" /> Discover candidate rules</span>
-            <span><ShieldCheck size={16} aria-hidden="true" /> Validate with confidence</span>
+            <span><ClipboardList size={16} aria-hidden="true" /> Organize your tasks</span>
+            <span><FileText size={16} aria-hidden="true" /> Work with your documents</span>
+            <span><BookOpen size={16} aria-hidden="true" /> Prepare and learn</span>
           </div>
         </div>
-        <p className="auth-aside-foot">Concept preview · No account data is stored</p>
+        <p className="auth-aside-foot">Your account is managed by the application backend.</p>
       </aside>
 
       <section className="auth-main">
         <Link className="back-link" to="/">
           <ArrowLeft size={16} aria-hidden="true" />
-          Back to overview
+          Back to home
         </Link>
         <div className={`auth-card auth-card-${mode}`}>
-          <p className="page-eyebrow">DATA QUALITY PLATFORM</p>
+          <p className="page-eyebrow">TAKE OVER MY WORK</p>
           <h1>{heading}</h1>
           <p className="auth-intro">{intro}</p>
           {children}
         </div>
-        <p className="auth-legal">Authentication is a visual preview and is not connected.</p>
+        <p className="auth-legal">Sign in or create an account to access your personal workspace.</p>
       </section>
     </main>
   )

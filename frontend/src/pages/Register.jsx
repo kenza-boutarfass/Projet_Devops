@@ -40,24 +40,24 @@ function Register() {
   }
 
   return (
-    <AuthLayout heading="Create your workspace" intro="Start with a clearer view of data quality." mode="register">
+    <AuthLayout heading="Create your workspace" intro="Choose a profile to personalize your study, teaching, or professional workspace." mode="register">
       <form className="auth-form" onSubmit={handleSubmit}>
         <fieldset className="profile-choice">
           <legend>Choose your profile</legend>
           <div className="profile-choice-options">
             <label className={`profile-choice-option ${profile === 'student' ? 'profile-choice-selected' : ''}`}>
               <input checked={profile === 'student'} name="profile" onChange={() => setProfile('student')} type="radio" value="student" />
-              <span className="profile-choice-copy"><strong>Student</strong><small>Learning and academic projects</small></span>
+              <span className="profile-choice-copy"><strong>Student</strong><small>Organize your studies, summarize courses, prepare exams, and manage assignments.</small></span>
               {profile === 'student' && <Check className="profile-choice-check" size={15} aria-hidden="true" />}
             </label>
             <label className={`profile-choice-option ${profile === 'professor' ? 'profile-choice-selected' : ''}`}>
               <input checked={profile === 'professor'} name="profile" onChange={() => setProfile('professor')} type="radio" value="professor" />
-              <span className="profile-choice-copy"><strong>Professor</strong><small>Teaching, reviewing, monitoring</small></span>
+              <span className="profile-choice-copy"><strong>Professor</strong><small>Prepare exams and teaching materials, work with documents, and organize academic tasks.</small></span>
               {profile === 'professor' && <Check className="profile-choice-check" size={15} aria-hidden="true" />}
             </label>
             <label className={`profile-choice-option ${profile === 'professional' ? 'profile-choice-selected' : ''}`}>
               <input checked={profile === 'professional'} name="profile" onChange={() => setProfile('professional')} type="radio" value="professional" />
-              <span className="profile-choice-copy"><strong>Professional</strong><small>Real-world quality workflows</small></span>
+              <span className="profile-choice-copy"><strong>Professional</strong><small>Organize work, manage documents, plan tasks, and streamline email workflows.</small></span>
               {profile === 'professional' && <Check className="profile-choice-check" size={15} aria-hidden="true" />}
             </label>
           </div>

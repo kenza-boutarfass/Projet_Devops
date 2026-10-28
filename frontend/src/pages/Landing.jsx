@@ -1,29 +1,15 @@
-import { ArrowRight, CircleCheck, FileCode2, ScanSearch, ShieldCheck } from 'lucide-react'
+import { ArrowRight, BookOpen, CheckCircle2, FileText, ListTodo, Mail, ShieldCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import Button from '../components/ui/Button.jsx'
 import LandingNav from '../components/navigation/LandingNav.jsx'
-import Pipeline from '../components/navigation/Pipeline.jsx'
 import AudienceSection from '../components/landing/AudienceSection.jsx'
 
-const principles = [
-  {
-    number: '01',
-    icon: ScanSearch,
-    title: 'Understand before enforcing',
-    text: 'Profile the shape of unfamiliar data first. Surface context and candidate rules for people to review.',
-  },
-  {
-    number: '02',
-    icon: FileCode2,
-    title: 'Keep rules executable',
-    text: 'Turn reviewed expectations into explicit contracts that can travel with the data workflow.',
-  },
-  {
-    number: '03',
-    icon: ShieldCheck,
-    title: 'Keep validation deterministic',
-    text: 'AI can help discover what to check. A deterministic engine should decide whether the checks pass.',
-  },
+const features = [
+  { icon: ListTodo, title: 'Task management', detail: 'Create, organize, and complete personal tasks.', status: 'Available' },
+  { icon: FileText, title: 'Document assistance', detail: 'Work with your study and work documents.', status: 'Coming soon' },
+  { icon: BookOpen, title: 'Content preparation', detail: 'Prepare revision and teaching materials.', status: 'Coming soon' },
+  { icon: ShieldCheck, title: 'Human control', detail: 'Review proposed task actions before they run.', status: 'Available' },
+  { icon: Mail, title: 'Email assistance', detail: 'Prepare and manage email workflows.', status: 'Coming soon' },
 ]
 
 function Landing() {
@@ -35,35 +21,39 @@ function Landing() {
           <LandingNav />
           <div className="hero-content">
             <div className="hero-copy">
-              <p className="eyebrow eyebrow-gold">DATA QUALITY PLATFORM</p>
-              <h1>From Messy Data<br /><em>to Executable Quality.</em></h1>
+              <p className="eyebrow eyebrow-gold">YOUR PERSONAL AI AGENT</p>
+              <h1>Your AI Agent.<br /><em>Your Work. Under Control.</em></h1>
               <p className="hero-description">
-                Understand heterogeneous data, discover quality rules with AI,
-                generate executable contracts, and bring validation into DevOps.
+                Delegate tasks, work with your documents, organize your day, and manage your workflow with an AI agent designed around your needs.
               </p>
               <div className="hero-actions">
                 <Button to="/register" icon={ArrowRight}>Get Started</Button>
-                <a className="text-action" href="#workflow">Explore Platform <span aria-hidden="true">↓</span></a>
+                <a className="text-action" href="#features">Explore Features <span aria-hidden="true">↓</span></a>
               </div>
               <div className="hero-footnote">
                 <span className="hero-footnote-rule" />
-                <span>AI-assisted discovery. Human-reviewed rules. Deterministic validation.</span>
+                <span>Actions stay transparent and under your control.</span>
               </div>
             </div>
-            <div className="hero-visual" aria-label="Illustration of the proposed data quality workflow">
-              <div className="visual-topline">
-                <span>QUALITY LIFECYCLE</span>
-                <span>01 — 07</span>
+            <div className="hero-visual" aria-label="Agent action lifecycle">
+              <div className="visual-topline"><span>YOUR WORKFLOW</span><span>PLAN · REVIEW · ACT</span></div>
+              <div className="agent-flow">
+                {['Your instruction', 'Agent plans', 'You approve', 'Task completed'].map((step, index) => (
+                  <div className="agent-flow-step" key={step}>
+                    <span>{String(index + 1).padStart(2, '0')}</span>
+                    <strong>{step}</strong>
+                    {index < 3 && <ArrowRight size={16} aria-hidden="true" />}
+                  </div>
+                ))}
               </div>
-              <Pipeline />
               <div className="visual-bottomline">
-                <span className="visual-orbit" aria-hidden="true"><CircleCheck size={15} /></span>
-                <span>Human review remains in the loop</span>
+                <span className="visual-orbit" aria-hidden="true"><CheckCircle2 size={15} /></span>
+                <span>Human approval before task creation</span>
               </div>
             </div>
           </div>
           <div className="hero-bottom-rule">
-            <span>DATA ENGINEERING</span><span>QUALITY SYSTEMS</span><span>DELIVERY CONFIDENCE</span>
+            <span>STUDY</span><span>TEACH</span><span>WORK</span>
           </div>
         </div>
       </section>
@@ -71,55 +61,52 @@ function Landing() {
       <section className="workflow-section" id="workflow">
         <div className="landing-container workflow-layout">
           <div className="section-intro">
-            <p className="section-kicker">A DIFFERENT STARTING POINT</p>
-            <h2>Rules should come<br />from understanding.</h2>
+            <p className="section-kicker">FROM INSTRUCTION TO ACTION</p>
+            <h2>Make room for<br />the work that matters.</h2>
           </div>
           <div className="workflow-copy">
             <p>
-              Data quality often begins with rules someone already knows to write.
-              This platform is designed to help teams find the rules hidden in data
-              and documentation, make them reviewable, then run them consistently.
+              Give your agent a task. It can currently prepare a task-creation plan for your review; once you approve, it creates and verifies that task in your workspace. Document and email assistance are planned, not connected yet.
             </p>
             <div className="workflow-steps-inline">
-              <span>Discover</span><i /><span>Review</span><i /><span>Execute</span>
+              <span>Instruct</span><i /><span>Review</span><i /><span>Approve</span><i /><span>Verify</span>
             </div>
           </div>
         </div>
         <div className="landing-container">
-          <Pipeline />
-          <p className="workflow-disclaimer">Proposed product workflow · Capabilities are being built in phases</p>
+          <p className="workflow-disclaimer">Available agent action: create a personal task after your approval.</p>
         </div>
       </section>
 
-      <AudienceSection />
-
-      <section className="principles-section" id="principles">
+      <section className="principles-section" id="features">
         <div className="landing-container">
           <div className="principles-heading">
             <div>
-              <p className="section-kicker">THE PRODUCT PRINCIPLES</p>
-              <h2>Intelligence with<br />clear boundaries.</h2>
+              <p className="section-kicker">WHAT YOUR WORKSPACE OFFERS</p>
+              <h2>Useful tools,<br />clearly scoped.</h2>
             </div>
-            <p>Assist the people shaping quality. Keep the system that executes it transparent and predictable.</p>
+            <p>We distinguish live functionality from planned assistance. No simulated document access, email connection, or completed actions.</p>
           </div>
           <div className="principle-list">
-            {principles.map(({ number, icon: Icon, title, text }) => (
-              <article className="principle-row" key={number}>
-                <span className="principle-number">{number}</span>
+            {features.map(({ icon: Icon, title, detail, status }, index) => (
+              <article className="principle-row" key={title}>
+                <span className="principle-number">{String(index + 1).padStart(2, '0')}</span>
                 <span className="principle-icon"><Icon size={20} strokeWidth={1.6} aria-hidden="true" /></span>
-                <div><h3>{title}</h3><p>{text}</p></div>
-                <ArrowRight className="principle-arrow" size={18} aria-hidden="true" />
+                <div><h3>{title}</h3><p>{detail}</p></div>
+                <span className={`feature-status ${status === 'Available' ? 'feature-status-live' : ''}`}>{status}</span>
               </article>
             ))}
           </div>
         </div>
       </section>
 
+      <AudienceSection />
+
       <footer className="landing-footer">
         <div className="landing-container landing-footer-inner">
-          <span className="footer-label">DATA QUALITY PLATFORM</span>
-          <span>Built for data teams · Product preview</span>
-          <Link to="/dashboard">Open preview <ArrowRight size={14} aria-hidden="true" /></Link>
+          <span className="footer-label">TAKE OVER MY WORK</span>
+          <span>Your tasks, your decisions.</span>
+          <Link to="/register">Get Started <ArrowRight size={14} aria-hidden="true" /></Link>
         </div>
       </footer>
     </main>

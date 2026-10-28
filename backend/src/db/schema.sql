@@ -135,3 +135,80 @@ CREATE TABLE IF NOT EXISTS quality_reports (
 );
 
 CREATE INDEX IF NOT EXISTS idx_quality_reports_project_id ON quality_reports(project_id);
+
+CREATE TABLE IF NOT EXISTS agent_executions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_request TEXT NOT NULL,
+  intent VARCHAR(100) NOT NULL,
+  plan JSONB NOT NULL DEFAULT '{}'::jsonb,
+  status VARCHAR(30) NOT NULL DEFAULT 'AWAITING_APPROVAL'
+    CHECK (status IN ('PENDING', 'PLANNING', 'AWAITING_APPROVAL', 'RUNNING', 'VERIFYING', 'COMPLETED', 'FAILED', 'CANCELLED')),
+  tool_result JSONB,
+  verification_result JSONB,
+  error_message TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_executions_user_created
+  ON agent_executions(user_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS tasks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  source_execution_id UUID UNIQUE REFERENCES agent_executions(id) ON DELETE SET NULL,
+  title VARCHAR(200) NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  priority VARCHAR(10) NOT NULL DEFAULT 'MEDIUM' CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH')),
+  status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED')),
+  due_date DATE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_tasks_user_status_due
+  ON tasks(user_id, status, due_date);
+
+CREATE TABLE IF NOT EXISTS execution_steps (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  execution_id UUID NOT NULL REFERENCES agent_executions(id) ON DELETE CASCADE,
+  step_index INTEGER NOT NULL,
+  tool_name VARCHAR(100) NOT NULL,
+  summary VARCHAR(300) NOT NULL,
+  status VARCHAR(30) NOT NULL DEFAULT 'AWAITING_APPROVAL'
+    CHECK (status IN ('PENDING', 'AWAITING_APPROVAL', 'RUNNING', 'VERIFYING', 'COMPLETED', 'FAILED', 'CANCELLED')),
+  input JSONB NOT NULL DEFAULT '{}'::jsonb,
+  output JSONB,
+  requires_approval BOOLEAN NOT NULL DEFAULT TRUE,
+  started_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  UNIQUE (execution_id, step_index)
+);
+
+CREATE TABLE IF NOT EXISTS approval_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  execution_id UUID NOT NULL UNIQUE REFERENCES agent_executions(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+  requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  decided_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_approval_requests_user_status
+  ON approval_requests(user_id, status, requested_at DESC);
+
+CREATE TABLE IF NOT EXISTS audit_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  execution_id UUID REFERENCES agent_executions(id) ON DELETE SET NULL,
+  event_type VARCHAR(60) NOT NULL,
+  summary VARCHAR(300) NOT NULL,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_events_user_created
+  ON audit_events(user_id, created_at DESC);
