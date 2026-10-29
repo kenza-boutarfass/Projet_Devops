@@ -1,10 +1,27 @@
+const crypto = require('crypto');
+
 const ROLE_LABELS = {
   STUDENT: 'academic',
   PROFESSOR: 'teaching and administrative',
   PROFESSIONAL: 'professional',
 };
 
-function planTaskRequest(request, role) {
+const PLAN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+function computePlanHash(steps, intent = 'CREATE_TASK') {
+  const normalized = {
+    intent,
+    steps: (steps || []).map((step) => ({
+      index: step.index,
+      tool: step.tool,
+      input: step.input,
+      requiresApproval: Boolean(step.requiresApproval),
+    })),
+  };
+  return crypto.createHash('sha256').update(JSON.stringify(normalized)).digest('hex');
+}
+
+function planTaskRequest(request, role, options = {}) {
   if (typeof request !== 'string' || request.trim().length < 4 || request.trim().length > 1000) {
     throw new Error('Request must contain between 4 and 1000 characters');
   }
@@ -20,18 +37,29 @@ function planTaskRequest(request, role) {
     throw new Error('The demo planner can currently plan internal task creation. Start with “Create a task to…”');
   }
 
+  const ttlMs = typeof options.ttlMs === 'number' ? options.ttlMs : PLAN_TTL_MS;
+  const now = options.now ? new Date(options.now) : new Date();
+  const expiresAt = new Date(now.getTime() + ttlMs).toISOString();
+
+  const steps = [{
+    index: 0,
+    tool: 'create_task',
+    summary: `Create task: ${taskTitle}`,
+    requiresApproval: true,
+    input: { title: taskTitle, description: normalizedRequest, priority: 'MEDIUM' },
+  }];
+
+  const intent = 'CREATE_TASK';
+  const planHash = computePlanHash(steps, intent);
+
   return {
-    intent: 'CREATE_TASK',
+    intent,
     interpretation: `Create one task in your ${ROLE_LABELS[role] || 'personal'} workspace.`,
     requiresApproval: true,
-    steps: [{
-      index: 0,
-      tool: 'create_task',
-      summary: `Create task: ${taskTitle}`,
-      requiresApproval: true,
-      input: { title: taskTitle, description: normalizedRequest, priority: 'MEDIUM' },
-    }],
+    planHash,
+    expiresAt,
+    steps,
   };
 }
 
-module.exports = { planTaskRequest };
+module.exports = { planTaskRequest, computePlanHash, PLAN_TTL_MS };

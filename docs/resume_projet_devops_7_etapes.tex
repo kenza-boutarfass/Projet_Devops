@@ -1,0 +1,227 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Packages essentiels ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage[margin=2cm]{geometry}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{tcolorbox}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows, positioning}
+
+% --- Définition des couleurs ---
+\definecolor{primary}{RGB}{2, 132, 199}     % Bleu cyan
+\definecolor{success}{RGB}{16, 185, 129}   % Vert émeraude
+\definecolor{warning}{RGB}{245, 158, 11}   % Orange/Ambre
+\definecolor{danger}{RGB}{239, 68, 68}     % Rouge alerte
+\definecolor{darkbg}{RGB}{15, 23, 42}      % Fond sombre
+\definecolor{lightgray}{RGB}{241, 245, 249}% Gris clair
+
+% --- Configuration hyperref ---
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primary,
+    urlcolor=primary,
+    pdftitle={Rapport de Projet - Plateforme DevSecOps de Qualité des Données},
+    pdfauthor={Équipe Projet DevOps}
+}
+
+% --- Boîtes thématiques personnalisées ---
+\newtcolorbox{stepbox}[2]{
+    colback=lightgray!50,
+    colframe=#1,
+    fonttitle=\bfseries\color{white},
+    title=#2,
+    arc=4mm,
+    boxrule=1pt,
+    left=8pt, right=8pt, top=8pt, bottom=8pt
+}
+
+\begin{document}
+
+% --- En-tête ---
+\begin{center}
+    {\Huge \bfseries \color{primary} Projet DevSecOps : Plateforme de Qualité des Données}\\[6pt]
+    {\Large \bfseries Synthèse Technique des 7 Étapes du Pipeline Exécutable}\\[10pt]
+    \rule{\linewidth}{1pt}\\[6pt]
+    \textbf{Auteur :} Projet Devops \quad | \quad \textbf{Architecture :} React + Node.js/Express + PostgreSQL + ODCS 0.9.3\\[4pt]
+    \textbf{Date :} Octobre 2026 \quad | \quad \textbf{Sécurité :} RBAC (Étudiant, Professeur, Professionnel)
+\end{center}
+
+\vspace{10pt}
+
+% --- Résumé Exécutif ---
+\section*{Résumé Exécutif}
+Ce projet implémente une plateforme complète de gouvernance, profilage, découverte d'assertions de qualité par IA, contractualisation de données exécutable (\textit{Open Data Contract Standard} - ODCS) et validation déterministe avec barrière qualité intégrée (\textit{CI/CD Quality Gate}). La solution applique un contrôle d'accès strict basé sur les rôles (\textbf{RBAC}) distinguant l'espace de travail d'un \textbf{Étudiant}, le mode de supervision en lecture seule d'un \textbf{Professeur}, et l'environnement autonome d'un \textbf{Professionnel}.
+
+\vspace{5pt}
+
+% --- Schéma du Pipeline ---
+\section*{Pipeline Méthodologique en 7 Étapes}
+
+\begin{center}
+\begin{tikzpicture}[
+    node distance=1.1cm and 0.6cm,
+    stepnode/.style={rectangle, rounded corners=3pt, minimum width=2.1cm, minimum height=0.9cm, text centered, draw=black!40, font=\footnotesize\bfseries, fill=white},
+    arrow/.style={thick, ->, >=stealth, color=primary}
+]
+    \node (e1) [stepnode, fill=primary!15, draw=primary] {1. Overview};
+    \node (e2) [stepnode, right=of e1, fill=primary!15, draw=primary] {2. Datasets};
+    \node (e3) [stepnode, right=of e2, fill=primary!15, draw=primary] {3. Profile};
+    \node (e4) [stepnode, right=of e3, fill=primary!15, draw=primary] {4. Rules};
+    \node (e5) [stepnode, below=of e4, fill=success!15, draw=success] {5. Contract};
+    \node (e6) [stepnode, left=of e5, fill=success!15, draw=success] {6. Validation};
+    \node (e7) [stepnode, left=of e6, fill=success!15, draw=success] {7. Reports};
+
+    \draw [arrow] (e1) -- (e2);
+    \draw [arrow] (e2) -- (e3);
+    \draw [arrow] (e3) -- (e4);
+    \draw [arrow] (e4) -- (e5);
+    \draw [arrow] (e5) -- (e6);
+    \draw [arrow] (e6) -- (e7);
+\end{tikzpicture}
+\end{center}
+
+\vspace{10pt}
+
+% =========================================================================
+% DÉTAIL DES 7 ÉTAPES
+% =========================================================================
+
+\subsection*{Étape 1 : Overview \& Gouvernance de Projet}
+\begin{stepbox}{primary}{Phase 1 — Synthèse \& Gestion Multi-Rôles}
+\begin{itemize}
+    \item \textbf{Objectif :} Centraliser la vision globale du projet, les indicateurs clés de performance (score de qualité, dataset connecté, statut de conformité) et la traçabilité.
+    \item \textbf{Gouvernance \& RBAC :}
+    \begin{itemize}
+        \item \textbf{Student :} Propriétaire de ses projets avec droits complets de modification.
+        \item \textbf{Professor :} Vue globale de supervision sur l'ensemble des projets étudiants (lecture seule sans droit de suppression ou d'altération).
+        \item \textbf{Professional :} Gestion étanche et autonome de projets d'entreprise.
+    \end{itemize}
+    \item \textbf{Composants clés :} Bannière de supervision contextuelle, badges d'état temps réel, suivi de progression du workflow.
+\end{itemize}
+\end{stepbox}
+
+\subsection*{Étape 2 : Datasets \& Ingestion de Données}
+\begin{stepbox}{primary}{Phase 2 — Ingestion, Benchmarks \& Prévisualisation}
+\begin{itemize}
+    \item \textbf{Objectif :} Charger des jeux de données réels ou intégrer en 1-clic des jeux d'échantillons calibrés (\textit{customers}, \textit{orders}).
+    \item \textbf{Fonctionnalités :}
+    \begin{itemize}
+        \item Upload de fichiers CSV via \texttt{multipart/form-data} sécurisé (\texttt{Multer}).
+        \item Génération instantanée de prévisualisations tabulaires des lignes brutes.
+        \item Enregistrement en base PostgreSQL (\texttt{datasets} : métadonnées, taille en octets, nombre de lignes et colonnes).
+    \end{itemize}
+\end{itemize}
+\end{stepbox}
+
+\subsection*{Étape 3 : Profile \& Profilage Statistique Déterministe}
+\begin{stepbox}{primary}{Phase 3 — Analyse de Structure \& Typage Inférentiel}
+\begin{itemize}
+    \item \textbf{Objectif :} Examiner les colonnes du dataset de manière 100\,\% déterministe et en dériver une empreinte statistique.
+    \item \textbf{Indicateurs extraits :}
+    \begin{itemize}
+        \item Inférence automatique de type : \texttt{INTEGER}, \texttt{FLOAT}, \texttt{EMAIL}, \texttt{DATE}, \texttt{BOOLEAN}, \texttt{TEXT}.
+        \item Détection de nullité : nombre et pourcentage de valeurs manquantes par colonne.
+        \item Cardinalité \& Unicité : comptage des valeurs distinctes et détection de clé primaire.
+        \item Métriques numériques : minimum, maximum, moyenne, médiane.
+    \end{itemize}
+\end{itemize}
+\end{stepbox}
+
+\subsection*{Étape 4 : Rules \& Découverte de Règles par IA avec Revue Humaine}
+\begin{stepbox}{primary}{Phase 4 — Moteur d'Inférence d'Assertions \& Human-in-the-Loop}
+\begin{itemize}
+    \item \textbf{Objectif :} Traduire l'analyse statistique en propositions de règles de qualité formulées avec justifications rationnelles (\textit{AI Rationale}).
+    \item \textbf{Règles découvertes :} \texttt{NOT\_NULL}, \texttt{UNIQUE}, \texttt{RANGE}, \texttt{FORMAT\_EMAIL}, \texttt{ALLOWED\_VALUES}, \texttt{DATE\_FORMAT}.
+    \item \textbf{Human-in-the-Loop (HITL) :} L'utilisateur examine les règles suggérées et procède à leur approbation (\texttt{APPROVED}) ou rejet explicite (\texttt{REJECTED}).
+\end{itemize}
+\end{stepbox}
+
+\newpage
+
+\subsection*{Étape 5 : Contract \& Compilation de Contrats de Données (ODCS)}
+\begin{stepbox}{success}{Phase 5 — Spécification Ouverte \& Format YAML Exécutable}
+\begin{itemize}
+    \item \textbf{Objectif :} Formaliser les règles approuvées sous forme de contrat de données versionné selon la norme \textbf{Open Data Contract Standard (ODCS 0.9.3)}.
+    \item \textbf{Spécification produite :}
+    \begin{itemize}
+        \item Métadonnées : Titre du projet, version (\texttt{v1.0.0}), environnement, propriétaire, contact.
+        \item Schéma logique : Définition des champs, types logiques, contraintes de nullité et d'unicité.
+        \item Assertions de qualité : Traduction des règles approuvées avec sévérité (\texttt{CRITICAL}, \texttt{ERROR}, \texttt{WARNING}).
+        \item Objectifs de niveau de service (SLO) : Seuil de qualité minimum fixé à 90\,\% et politique de rupture \texttt{BLOCK\_PIPELINE}.
+    \end{itemize}
+    \item \textbf{Exports :} Téléchargement direct en \texttt{.yaml} et copie dans le presse-papiers.
+\end{itemize}
+\end{stepbox}
+
+\subsection*{Étape 6 : Validation \& Moteur d'Exécution Déterministe}
+\begin{stepbox}{success}{Phase 6 — Exécution des Assertions \& Détection des Violations}
+\begin{itemize}
+    \item \textbf{Objectif :} Évaluer ligne par ligne le jeu de données cible contre chaque assertion stipulée dans le contrat de données actif.
+    \item \textbf{Résultats calculés :}
+    \begin{itemize}
+        \item Score de qualité pondéré ($0$ à $100\,\%$).
+        \item Statut unitaire par assertion (\texttt{PASSED} ou \texttt{FAILED}) avec taux de conformité.
+        \item Traçabilité fine des violations : numéro de ligne exacte, valeur incriminée et motif de rejet (ex. : \textit{Row \#3 : email vide}).
+        \item Temps d'exécution mesuré en millisecondes pour un profilage haute performance.
+    \end{itemize}
+    \item \textbf{Historique d'exécution :} Enregistrement immuable dans la table PostgreSQL \texttt{validation\_runs}.
+\end{itemize}
+\end{stepbox}
+
+\subsection*{Étape 7 : Reports \& Barrière DevSecOps (CI/CD Gate)}
+\begin{stepbox}{success}{Phase 7 — Décision CI/CD, Livrables d'Audit \& Supervision Académique}
+\begin{itemize}
+    \item \textbf{Objectif :} Fournir la décision finale de déploiement et archiver un rapport d'audit opposable.
+    \item \textbf{Composants délivrés :}
+    \begin{itemize}
+        \item \textbf{Verdict CI/CD Quality Gate :}
+        \begin{equation*}
+            \text{Quality Score} \ge 90\,\% \implies \text{PASSED (Exit Code 0, Déploiement Autorisé)}
+        \end{equation*}
+        \begin{equation*}
+            \text{Quality Score} < 90\,\% \implies \text{FAILED (Exit Code 1, Pipeline Bloqué)}
+        \end{equation*}
+        \item \textbf{Livrables téléchargeables :} Rapport Markdown d'audit (\texttt{.md}) et payload JSON normalisé pour intégration CI/CD (\texttt{.json}).
+        \item \textbf{Workflow GitHub Actions :} Snippet YAML (\texttt{.github/workflows/data-quality-gate.yml}) prêt pour l'intégration continue.
+        \item \textbf{Supervision Académique :} Module dédié permettant aux professeurs d'attribuer une note ou appréciation enregistrée et consultable par l'étudiant.
+    \end{itemize}
+\end{itemize}
+\end{stepbox}
+
+\vspace{10pt}
+
+% =========================================================================
+% SYNTHÈSE DES TECHNOLOGIES ET RÉSULTATS
+% =========================================================================
+
+\section*{Matrice Technologique \& Conformité}
+
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{l p{5.5cm} X}
+\toprule
+\textbf{Couche} & \textbf{Technologie} & \textbf{Rôle dans l'Architecture} \\
+\midrule
+\textbf{Frontend} & React 18, Vite, Lucide Icons, Vanilla CSS & Interface fluide, thème sombre premium, réactivité temps réel \\
+\textbf{Backend} & Node.js, Express.js & API REST modulaire, moteurs d'évaluation déterministes \\
+\textbf{Base de Données} & PostgreSQL 18 & Schéma relationnel strict, JSONB, ENUM des rôles, clés étrangères \\
+\textbf{Standards} & ODCS 0.9.3, YAML & Contrats de données interopérables pour gouvernance moderne \\
+\textbf{DevSecOps} & GitHub Actions, JWT, RBAC & Sécurité par rôle, barrière qualité automatisée, protection des secrets \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\vspace{10pt}
+\begin{tcolorbox}[colback=darkbg, colframe=primary, fonttitle=\bfseries\color{white}, title=Bilan de Réalisation]
+\color{white}
+\textbf{Statut du projet :} Les 7 étapes du pipeline sont entièrement implémentées, validées par des tests d'intégration automatisés de bout en bout et synchronisées sur le dépôt GitHub (\texttt{origin/main}). Aucun secret ni variable d'environnement (\texttt{.env}) n'a été exposé.
+\end{tcolorbox}
+
+\end{document}

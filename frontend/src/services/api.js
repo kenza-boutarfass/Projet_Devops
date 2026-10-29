@@ -166,8 +166,11 @@ export async function getAgentExecutions() {
   return authenticatedRequest('/agent/executions')
 }
 
-export async function approveAgentExecution(id) {
-  return authenticatedRequest(`/agent/executions/${encodeURIComponent(id)}/approve`, { method: 'POST' })
+export async function approveAgentExecution(id, data = {}) {
+  return authenticatedRequest(`/agent/executions/${encodeURIComponent(id)}/approve`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
 }
 
 export async function rejectAgentExecution(id) {

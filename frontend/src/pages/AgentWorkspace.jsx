@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, Bot, Check, Clock3, Lightbulb, X } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Bot, Check, Clock3, Lightbulb, X } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader.jsx'
 import { approveAgentExecution, createAgentExecution, getAgentExecutions, rejectAgentExecution } from '../services/api.js'
 
@@ -37,6 +37,7 @@ function AgentWorkspace() {
 
   async function handleSubmit(event) {
     event.preventDefault()
+    if (submitting) return
     setSubmitting(true)
     setError('')
     setNotice('')
@@ -53,13 +54,22 @@ function AgentWorkspace() {
   }
 
   async function decide(execution, action) {
+    if (busyId) return
     setBusyId(execution.id)
     setError('')
     setNotice('')
     try {
       if (action === 'approve') {
-        const result = await approveAgentExecution(execution.id)
-        setNotice(result.verified ? `Task “${result.task.title}” was created and verified.` : 'The approved action did not return verification.')
+        const result = await approveAgentExecution(execution.id, {
+          planHash: execution.plan?.planHash,
+        })
+        if (result.verified && result.task) {
+          setNotice(`Task “${result.task.title}” was created and verified in the database.`)
+        } else if (result.status === 'UNCERTAIN') {
+          setError('Task outcome is uncertain: the task could not be confirmed in the database.')
+        } else {
+          setError(result.message || 'The approved action could not be verified by the backend.')
+        }
       } else {
         await rejectAgentExecution(execution.id)
         setNotice('You rejected this proposed action. No task was created.')
@@ -67,6 +77,7 @@ function AgentWorkspace() {
       await loadExecutions()
     } catch (decisionError) {
       setError(decisionError.message || 'The action could not be completed.')
+      await loadExecutions()
     } finally {
       setBusyId('')
     }
@@ -127,20 +138,44 @@ function AgentWorkspace() {
           <div className="approval-list">
             {pending.map((execution) => {
               const step = execution.plan?.steps?.[0]
+              const isExpired = execution.plan?.expiresAt && new Date(execution.plan.expiresAt) < new Date()
+              const isActionBusy = busyId === execution.id
+              const isAnyBusy = Boolean(busyId)
+
               return (
                 <article className="approval-card" key={execution.id}>
-                  <div className="approval-card-icon"><Clock3 size={17} /></div>
+                  <div className="approval-card-icon">
+                    {isExpired ? <AlertTriangle size={17} className="text-warning" /> : <Clock3 size={17} />}
+                  </div>
                   <div className="approval-card-copy">
-                    <p className="panel-eyebrow">TASK CREATION REQUEST</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <p className="panel-eyebrow">TASK CREATION REQUEST</p>
+                      {isExpired && <span className="feature-status" style={{ color: '#ef4444', borderColor: '#ef4444' }}>EXPIRED</span>}
+                    </div>
                     <h3>{step?.input?.title || 'Proposed task'}</h3>
                     <p>{execution.user_request}</p>
-                    <small>Created {new Date(execution.created_at).toLocaleString()}</small>
+                    <small>
+                      Created {new Date(execution.created_at).toLocaleString()}
+                      {execution.plan?.expiresAt && (
+                        <span> · {isExpired ? 'Expired' : `Expires ${new Date(execution.plan.expiresAt).toLocaleTimeString()}`}</span>
+                      )}
+                    </small>
                   </div>
                   <div className="approval-card-actions">
-                    <button className="button button-primary" disabled={busyId === execution.id} onClick={() => decide(execution, 'approve')} type="button">
-                      <Check size={15} /> Approve
+                    <button
+                      className="button button-primary"
+                      disabled={isAnyBusy || isExpired}
+                      onClick={() => decide(execution, 'approve')}
+                      type="button"
+                    >
+                      <Check size={15} /> {isActionBusy ? 'Processing…' : 'Approve'}
                     </button>
-                    <button className="button button-secondary" disabled={busyId === execution.id} onClick={() => decide(execution, 'reject')} type="button">
+                    <button
+                      className="button button-secondary"
+                      disabled={isAnyBusy}
+                      onClick={() => decide(execution, 'reject')}
+                      type="button"
+                    >
                       <X size={15} /> Reject
                     </button>
                   </div>
@@ -157,3 +192,4 @@ function AgentWorkspace() {
 }
 
 export default AgentWorkspace
+

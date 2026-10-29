@@ -1,5 +1,5 @@
 const { pool, query } = require('../db');
-const { planTaskRequest } = require('../services/agentPlanner');
+const { planTaskRequest, computePlanHash } = require('../services/agentPlanner');
 const { getTool } = require('../services/toolRegistry');
 
 async function createExecution(req, res) {
@@ -68,23 +68,121 @@ async function approveExecution(req, res) {
   try {
     await client.query('BEGIN');
     const result = await client.query(
-      `SELECT id, plan, status FROM agent_executions
-       WHERE id::text = $1 AND user_id = $2 FOR UPDATE`,
-      [req.params.id, req.user.id]
+      `SELECT id, user_id, plan, status, created_at FROM agent_executions
+       WHERE id::text = $1 FOR UPDATE`,
+      [req.params.id]
     );
     execution = result.rows[0];
+
+    // 1. Not found
     if (!execution) {
       await client.query('ROLLBACK');
       return res.status(404).json({ success: false, message: 'Action plan not found' });
     }
+
+    // 2. Strict Multi-Tenant Isolation: user cannot approve another user's plan
+    if (execution.user_id !== req.user.id) {
+      await client.query(
+        `INSERT INTO audit_events (user_id, execution_id, event_type, summary)
+         VALUES ($1, $2, 'UNAUTHORIZED_APPROVAL_ATTEMPT', 'Unauthorized attempt to approve action belonging to another user')`,
+        [req.user.id, execution.id]
+      ).catch(() => {});
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, message: 'Forbidden: You cannot approve another user’s action plan' });
+    }
+
+    // 3. Strict Idempotence & State Validation
+    if (execution.status === 'COMPLETED') {
+      const existingTask = await client.query(
+        `SELECT id, title, description, priority, status, due_date, created_at
+         FROM tasks WHERE source_execution_id = $1 AND user_id = $2`,
+        [execution.id, req.user.id]
+      );
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        success: false,
+        status: 'COMPLETED',
+        verified: true,
+        task: existingTask.rows[0] || null,
+        message: 'This action plan has already been approved and executed',
+      });
+    }
+
+    if (execution.status === 'RUNNING' || execution.status === 'VERIFYING') {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ success: false, message: 'This action is currently being executed' });
+    }
+
+    if (execution.status === 'CANCELLED') {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ success: false, message: 'This action plan was rejected and cannot be approved' });
+    }
+
+    if (execution.status === 'FAILED') {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ success: false, message: 'This action previously failed and cannot be re-approved' });
+    }
+
     if (execution.status !== 'AWAITING_APPROVAL') {
       await client.query('ROLLBACK');
       return res.status(409).json({ success: false, message: 'This action is no longer awaiting approval' });
     }
 
-    const step = execution.plan.steps?.[0];
+    // 4. Expiration Check (TTL)
+    const isExpired = execution.plan?.expiresAt && new Date(execution.plan.expiresAt) < new Date();
+    if (isExpired) {
+      await client.query(
+        `UPDATE agent_executions SET status = 'CANCELLED', error_message = 'Approval expired', updated_at = NOW() WHERE id = $1`,
+        [req.params.id]
+      );
+      await client.query(
+        `UPDATE approval_requests SET status = 'REJECTED', decided_at = NOW() WHERE execution_id = $1`,
+        [req.params.id]
+      );
+      await client.query(
+        `INSERT INTO audit_events (user_id, execution_id, event_type, summary)
+         VALUES ($1, $2, 'PLAN_EXPIRED', 'Action plan expired before approval was received')`,
+        [req.user.id, req.params.id]
+      );
+      await client.query('COMMIT');
+      return res.status(410).json({ success: false, message: 'This action plan has expired' });
+    }
+
+    // 5. Plan Integrity & Anti-Tampering Check (Cryptographic Plan Hash)
+    const step = execution.plan?.steps?.[0];
+    const expectedHash = computePlanHash(execution.plan?.steps, execution.plan?.intent);
+    const recordedHash = execution.plan?.planHash;
+
+    if (recordedHash && expectedHash !== recordedHash) {
+      await client.query(
+        `UPDATE agent_executions SET status = 'FAILED', error_message = 'Plan was modified or corrupted; approval invalidated', updated_at = NOW() WHERE id = $1`,
+        [req.params.id]
+      );
+      await client.query(
+        `INSERT INTO audit_events (user_id, execution_id, event_type, summary)
+         VALUES ($1, $2, 'PLAN_MODIFIED', 'Approval rejected because the proposed plan or parameters were altered')`,
+        [req.user.id, req.params.id]
+      );
+      await client.query('COMMIT');
+      return res.status(400).json({
+        success: false,
+        message: 'Plan integrity check failed: the plan or its parameters were modified; approval is invalidated',
+      });
+    }
+
+    if (req.body?.planHash && recordedHash && req.body.planHash !== recordedHash) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        success: false,
+        message: 'Submitted plan fingerprint does not match the active proposal',
+      });
+    }
+
+    // 6. Tool Validation & Pre-execution
     const tool = getTool(step?.tool);
-    if (!tool || !tool.requiresApproval) throw new Error('Approved tool is not registered for execution');
+    if (!tool || !tool.requiresApproval) {
+      throw new Error('Approved tool is not registered for execution');
+    }
 
     await client.query(
       `UPDATE agent_executions SET status = 'RUNNING', updated_at = NOW() WHERE id = $1`,
@@ -104,20 +202,44 @@ async function approveExecution(req, res) {
       [req.user.id, req.params.id]
     );
 
+    // 7. Execution of Tool
     const task = await tool.execute({
       client,
       userId: req.user.id,
       executionId: req.params.id,
       input: step.input,
     });
+
+    // 8. Server-side Database Verification
     await client.query(`UPDATE agent_executions SET status = 'VERIFYING', updated_at = NOW() WHERE id = $1`, [req.params.id]);
     await client.query(`UPDATE execution_steps SET status = 'VERIFYING' WHERE execution_id = $1 AND step_index = 0`, [req.params.id]);
-    const verification = await client.query(
-      'SELECT id FROM tasks WHERE id = $1 AND user_id = $2',
-      [task.id, req.user.id]
-    );
-    if (!verification.rows[0]) throw new Error('Created task could not be verified');
 
+    const verification = await client.query(
+      'SELECT id, title, description, priority, status FROM tasks WHERE id = $1 AND user_id = $2',
+      [task?.id, req.user.id]
+    );
+
+    if (!verification.rows[0]) {
+      // Result is uncertain or failed; rollback and record explicit failure
+      await client.query(
+        `UPDATE agent_executions SET status = 'FAILED', verification_result = $1, error_message = $2, updated_at = NOW() WHERE id = $3`,
+        [JSON.stringify({ verified: false, uncertain: true, reason: 'Task row was not found in database' }), 'Created task could not be verified in the database', req.params.id]
+      );
+      await client.query(
+        `INSERT INTO audit_events (user_id, execution_id, event_type, summary)
+         VALUES ($1, $2, 'ACTION_UNCERTAIN', 'Task creation completed tool step but failed database verification')`,
+        [req.user.id, req.params.id]
+      );
+      await client.query('COMMIT');
+      return res.status(500).json({
+        success: false,
+        status: 'UNCERTAIN',
+        verified: false,
+        message: 'Task creation could not be verified in database; outcome is uncertain',
+      });
+    }
+
+    // 9. Confirmed Success
     await client.query(
       `UPDATE execution_steps SET status = 'COMPLETED', output = $1, completed_at = NOW()
        WHERE execution_id = $2 AND step_index = 0`,
@@ -134,7 +256,7 @@ async function approveExecution(req, res) {
       [req.user.id, req.params.id]
     );
     await client.query('COMMIT');
-    return res.json({ success: true, status: 'COMPLETED', verified: true, task });
+    return res.json({ success: true, status: 'COMPLETED', verified: true, task: verification.rows[0] });
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
     console.error('Approve agent action error:', error);
@@ -142,14 +264,14 @@ async function approveExecution(req, res) {
       try {
         await query(
           `UPDATE agent_executions SET status = 'FAILED', error_message = $1, updated_at = NOW()
-           WHERE id = $2 AND user_id = $3 AND status = 'AWAITING_APPROVAL'`,
+           WHERE id = $2 AND user_id = $3 AND status IN ('AWAITING_APPROVAL', 'RUNNING', 'VERIFYING')`,
           [error.message, req.params.id, req.user.id]
         );
       } catch (recordError) {
         console.error('Could not record agent failure:', recordError);
       }
     }
-    return res.status(500).json({ success: false, message: 'Action failed; no success was recorded' });
+    return res.status(500).json({ success: false, status: 'FAILED', verified: false, message: error.message || 'Action failed; no success was recorded' });
   } finally {
     client.release();
   }
@@ -160,17 +282,32 @@ async function rejectExecution(req, res) {
   try {
     await client.query('BEGIN');
     const result = await client.query(
-      `SELECT id, status FROM agent_executions WHERE id::text = $1 AND user_id = $2 FOR UPDATE`,
-      [req.params.id, req.user.id]
+      `SELECT id, user_id, status FROM agent_executions WHERE id::text = $1 FOR UPDATE`,
+      [req.params.id]
     );
-    if (!result.rows[0]) {
+    const execution = result.rows[0];
+
+    if (!execution) {
       await client.query('ROLLBACK');
       return res.status(404).json({ success: false, message: 'Action plan not found' });
     }
-    if (result.rows[0].status !== 'AWAITING_APPROVAL') {
+
+    // Strict Multi-Tenant Isolation
+    if (execution.user_id !== req.user.id) {
+      await client.query(
+        `INSERT INTO audit_events (user_id, execution_id, event_type, summary)
+         VALUES ($1, $2, 'UNAUTHORIZED_REJECTION_ATTEMPT', 'Unauthorized attempt to reject action belonging to another user')`,
+        [req.user.id, execution.id]
+      ).catch(() => {});
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, message: 'Forbidden: You cannot reject another user’s action plan' });
+    }
+
+    if (execution.status !== 'AWAITING_APPROVAL') {
       await client.query('ROLLBACK');
       return res.status(409).json({ success: false, message: 'This action can no longer be rejected' });
     }
+
     await client.query(
       `UPDATE agent_executions SET status = 'CANCELLED', updated_at = NOW(), completed_at = NOW() WHERE id = $1`,
       [req.params.id]
@@ -213,4 +350,4 @@ async function listActivity(req, res) {
   }
 }
 
-module.exports = { createExecution, listExecutions, approveExecution, rejectExecution, listActivity };
+module.exports = { createExecution, listExecutions, approveExecution, rejectExecution, listActivity };
