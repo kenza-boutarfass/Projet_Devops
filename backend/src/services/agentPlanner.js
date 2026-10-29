@@ -8,18 +8,30 @@ const ROLE_LABELS = {
 
 const PLAN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
+function sortObject(val) {
+  if (val === null || typeof val !== 'object' || Array.isArray(val)) {
+    return val;
+  }
+  const sorted = {};
+  for (const k of Object.keys(val).sort()) {
+    sorted[k] = sortObject(val[k]);
+  }
+  return sorted;
+}
+
 function computePlanHash(steps, intent = 'CREATE_TASK') {
   const normalized = {
     intent,
     steps: (steps || []).map((step) => ({
       index: step.index,
       tool: step.tool,
-      input: step.input,
+      input: sortObject(step.input),
       requiresApproval: Boolean(step.requiresApproval),
     })),
   };
   return crypto.createHash('sha256').update(JSON.stringify(normalized)).digest('hex');
 }
+
 
 function planTaskRequest(request, role, options = {}) {
   if (typeof request !== 'string' || request.trim().length < 4 || request.trim().length > 1000) {

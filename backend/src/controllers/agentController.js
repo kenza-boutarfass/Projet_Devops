@@ -339,7 +339,7 @@ async function rejectExecution(req, res) {
 async function listActivity(req, res) {
   try {
     const result = await query(
-      `SELECT id, execution_id, event_type, summary, created_at
+      `SELECT id, execution_id, event_type, summary, metadata, created_at
        FROM audit_events WHERE user_id = $1 ORDER BY created_at DESC LIMIT 100`,
       [req.user.id]
     );
@@ -350,4 +350,4 @@ async function listActivity(req, res) {
   }
 }
 
-module.exports = { createExecution, listExecutions, approveExecution, rejectExecution, listActivity };
+module.exports = { createExecution, listExecutions, approveExecution, rejectExecution, listActivity };

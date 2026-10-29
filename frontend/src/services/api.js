@@ -140,8 +140,26 @@ async function authenticatedRequest(path, options = {}) {
   return data
 }
 
-export async function getTasks() {
-  return authenticatedRequest('/tasks')
+export async function getTasks(filters = {}) {
+  const params = new URLSearchParams()
+  if (filters.status && filters.status !== 'ALL') params.set('status', filters.status)
+  if (filters.priority && filters.priority !== 'ALL') params.set('priority', filters.priority)
+  if (filters.due && filters.due !== 'ALL') params.set('due', filters.due)
+  if (filters.search && filters.search.trim()) params.set('search', filters.search.trim())
+
+  const queryString = params.toString()
+  return authenticatedRequest(`/tasks${queryString ? `?${queryString}` : ''}`)
+}
+
+export async function getTask(id) {
+  return authenticatedRequest(`/tasks/${encodeURIComponent(id)}`)
+}
+
+export async function createTask(taskData) {
+  return authenticatedRequest('/tasks', {
+    method: 'POST',
+    body: JSON.stringify(taskData),
+  })
 }
 
 export async function updateTask(id, updates) {
@@ -151,8 +169,23 @@ export async function updateTask(id, updates) {
   })
 }
 
+export async function startTask(id) {
+  return authenticatedRequest(`/tasks/${encodeURIComponent(id)}/start`, { method: 'POST' })
+}
+
 export async function completeTask(id) {
   return authenticatedRequest(`/tasks/${encodeURIComponent(id)}/complete`, { method: 'POST' })
+}
+
+export async function deleteTask(id) {
+  return authenticatedRequest(`/tasks/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+export async function addTaskChecklist(id, items) {
+  return authenticatedRequest(`/tasks/${encodeURIComponent(id)}/checklist`, {
+    method: 'POST',
+    body: JSON.stringify({ items }),
+  })
 }
 
 export async function createAgentExecution(request) {

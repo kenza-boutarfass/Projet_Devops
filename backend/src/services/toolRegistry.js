@@ -12,14 +12,14 @@ const tools = {
         `INSERT INTO tasks (user_id, source_execution_id, title, description, priority)
          VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (source_execution_id) DO NOTHING
-         RETURNING id, title, description, priority, status, due_date, created_at`,
+         RETURNING id, title, description, priority, status, due_date, checklist, created_at`,
         [userId, executionId, input.title.trim(), input.description || '', input.priority || 'MEDIUM']
       );
 
       if (result.rows[0]) return result.rows[0];
 
       const existing = await client.query(
-        `SELECT id, title, description, priority, status, due_date, created_at
+        `SELECT id, title, description, priority, status, due_date, checklist, created_at
          FROM tasks WHERE source_execution_id = $1 AND user_id = $2`,
         [executionId, userId]
       );

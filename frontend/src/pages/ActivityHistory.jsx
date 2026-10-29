@@ -1,7 +1,16 @@
-import { useEffect, useState } from 'react'
-import { Activity, CheckCircle2, CircleX } from 'lucide-react'
+import { Activity, CheckCircle2, CircleX, ListChecks, Play, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader.jsx'
 import { getAgentActivity } from '../services/api.js'
+
+function getEventIcon(eventType) {
+  if (/FAIL|REJECT|CANCEL/.test(eventType)) return { Icon: CircleX, typeClass: 'activity-event-failed' }
+  if (/DELETE/.test(eventType)) return { Icon: Trash2, typeClass: 'activity-event-deleted' }
+  if (/START/.test(eventType)) return { Icon: Play, typeClass: 'activity-event-started' }
+  if (/CREATE/.test(eventType)) return { Icon: Plus, typeClass: 'activity-event-created' }
+  if (/CHECKLIST/.test(eventType)) return { Icon: ListChecks, typeClass: 'activity-event-checklist' }
+  if (/UPDATE/.test(eventType)) return { Icon: RefreshCw, typeClass: 'activity-event-updated' }
+  return { Icon: CheckCircle2, typeClass: '' }
+}
 
 function ActivityHistory() {
   const [events, setEvents] = useState([])
@@ -31,11 +40,10 @@ function ActivityHistory() {
       ) : events.length ? (
         <div className="activity-list">
           {events.map((event) => {
-            const failed = /FAIL|REJECT|CANCEL/.test(event.event_type)
-            const Icon = failed ? CircleX : CheckCircle2
+            const { Icon, typeClass } = getEventIcon(event.event_type)
             return (
               <article className="activity-row" key={event.id}>
-                <span className={`activity-event-icon ${failed ? 'activity-event-failed' : ''}`}><Icon size={17} /></span>
+                <span className={`activity-event-icon ${typeClass}`}><Icon size={17} /></span>
                 <div><h2>{event.summary}</h2><p>{event.event_type.replaceAll('_', ' ')}</p></div>
                 <time dateTime={event.created_at}>{new Date(event.created_at).toLocaleString()}</time>
               </article>
@@ -50,3 +58,4 @@ function ActivityHistory() {
 }
 
 export default ActivityHistory
+
